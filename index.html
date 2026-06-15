@@ -3366,8 +3366,9 @@ document.addEventListener('DOMContentLoaded', () => {
       var token = cfg.pipefy;
       var pPipe = (opecId && token) ? neagCallFn('pipefy-card', { cardId: opecId, pipefyToken: token }).catch(function () { return null; }) : Promise.resolve(null);
       var pBms = ctx.brand ? neagCallFn('bms-lookup', { brand: ctx.brand }).catch(function (e) { return { __err: String((e && e.message) || e) }; }) : Promise.resolve(null);
-      var res = await Promise.all([pPipe, pBms]);
-      var pf = res[0], bms = res[1];
+      var pInpi = ctx.brand ? neagCallFn('inpi-lookup', { brand: ctx.brand }).catch(function (e) { return { __err: String((e && e.message) || e) }; }) : Promise.resolve(null);
+      var res = await Promise.all([pPipe, pBms, pInpi]);
+      var pf = res[0], bms = res[1], inpiR = res[2];
 
       var comments = [], labels = [], phase = '';
       if (pf && pf.card) {
@@ -3380,9 +3381,10 @@ document.addEventListener('DOMContentLoaded', () => {
       var abertura = /aberto/i.test(blob);
       var recusa = /(neg(ou|aram|ou-se|a-se)[^.]{0,40}(negativ|contat))|n[ãa]o (deseja|quer)( mais)? (ser )?contat|recus(ou|a-se|aram)|n[ãa]o deseja contato/i.test(blob);
       var labLow = labels.map(function (s) { return (s || '').toLowerCase(); });
-      var topLeilao = null;
+      // Top Leilão: 'ativo' SÓ se a tag "Top Leilão Ativo" estiver no card. Sem a tag ativa
+      // (tag "Inativo" OU nenhuma tag) = 'inativo' (0). Se o Pipefy não foi lido, fica em branco.
+      var topLeilao = (pf && pf.card) ? 'inativo' : null;
       if (labLow.some(function (l) { return l.indexOf('top leilão ativo') >= 0 || l.indexOf('top leilao ativo') >= 0; })) topLeilao = 'ativo';
-      else if (labLow.some(function (l) { return l.indexOf('top leilão inativo') >= 0 || l.indexOf('top leilao inativo') >= 0; })) topLeilao = 'inativo';
 
       var termo = null, ranking = null, freq = null, aggr = null, bmsErro = (bms && bms.__err) || null;
       if (bms && bms.found && Array.isArray(bms.aggressors)) {
@@ -3404,7 +3406,11 @@ document.addEventListener('DOMContentLoaded', () => {
       NEAG.auto = {
         termo: termo, ranking: ranking, freq: freq,
         posicionamento: recusa ? 'recusa' : 'sem', ciencia: abertura ? 'sim' : 'nao',
-        topLeilao: topLeilao, aggressor: aggr, bmsFound: !!(bms && bms.found), bmsErro: bmsErro, pipeOk: !!(pf && pf.card)
+        topLeilao: topLeilao, aggressor: aggr, bmsFound: !!(bms && bms.found), bmsErro: bmsErro, pipeOk: !!(pf && pf.card),
+        inpiAuto: (inpiR && inpiR.ok && inpiR.inpiStatus) ? inpiR.inpiStatus : null,
+        inpiTotal: (inpiR && inpiR.ok) ? inpiR.total : null,
+        inpiVigor: (inpiR && inpiR.ok) ? inpiR.emVigor : null,
+        inpiErro: (inpiR && inpiR.__err) ? inpiR.__err : null
       };
       NEAG.comments = comments;
       neagRenderForm();
@@ -3444,11 +3450,18 @@ document.addEventListener('DOMContentLoaded', () => {
     var segTxt = (segGen == null) ? 'Segmento: confirme (sem domínio no BMS)'
       : (segGen ? ('Segmento: Não — ' + dom + ' é marketplace/OTA genérico')
         : ('Segmento: Sim — ' + dom + ' é concorrente do nicho'));
+    // INPI: auto-preenche SÓ achados positivos (Nominativo/Misto/Arquivada). "Sem registro" (0 marcas) pode ser
+    // diferença de grafia do nome — deixa "Não localizado" pro analista conferir, em vez de bloquear a NE errado.
+    if (a.inpiAuto && a.inpiAuto !== 'Sem registro') neagSet('neag-inpi', a.inpiAuto);
+    var inpiTxt = (a.inpiAuto && a.inpiAuto !== 'Sem registro')
+      ? ('INPI: ' + a.inpiAuto + (a.inpiTotal ? ' — ' + a.inpiVigor + '/' + a.inpiTotal + ' em vigor' : '') + ' (auto)')
+      : (a.inpiErro ? 'INPI: falha — confira manualmente'
+        : (a.inpiAuto === 'Sem registro' ? ('INPI: nada encontrado para "' + (NEAG.card.brand || '') + '" — confira a grafia/registro') : 'INPI: não consultado — confira'));
     var resumo = [
       a.pipeOk ? 'Pipefy lido ✓' : 'Pipefy não lido',
       a.bmsErro ? ('BMS: falha — ' + a.bmsErro) : (a.bmsFound ? ('BMS: ' + (agg ? ('agressor ' + agg.domain + (agg.bestPosition != null ? ' · pos ' + agg.bestPosition : '') + (agg.agressividade14d != null ? ' · agr ' + agg.agressividade14d + '/10' : '') + (agg.termo ? ' · ' + agg.termo : '')) : 'campanha encontrada')) : 'BMS: marca não encontrada'),
       segTxt,
-      '➡ confirme INPI.'
+      inpiTxt
     ].join(' · ');
     var body = document.getElementById('neag-body');
     if (body) { var d = document.createElement('div'); d.className = 'neag-info'; d.textContent = '🤖 ' + resumo; body.insertBefore(d, body.firstChild); }
@@ -3492,7 +3505,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '<div class="neag-grp"><div class="neag-lbl">Status no INPI</div><select class="neag-input" id="neag-inpi">' +
           '<option value="Nominativo">Nominativo (ativo)</option><option value="Misto">Misto (ativo)</option>' +
           '<option value="Sem registro">Sem registro</option><option value="Arquivada">Arquivada</option>' +
-          '<option value="Não localizado">Não localizado</option></select>' +
+          '<option value="Não localizado" selected>Não localizado</option></select>' +
           '<div class="neag-hint"><a href="' + inpiURL + '" target="_blank" rel="noopener" style="color:var(--brand,#2563eb)">🔎 Buscar no INPI</a></div></div>' +
       '</div>' +
       '<div class="neag-sect">Critérios do score</div>' +
@@ -3602,10 +3615,10 @@ document.addEventListener('DOMContentLoaded', () => {
       assunto = 'Notificação extrajudicial – nova tentativa via carta com AR | ' + cliente + ' - Branddi';
       corpo = 'Olá, pessoal! Tudo bem?\n\nSeguimos acompanhando o cenário envolvendo o domínio ' + dominio + ' e, conforme alinhado anteriormente, realizamos o envio da notificação extrajudicial por e-mail, através do nosso escritório de advocacia parceiro.\n\nContudo, até o momento não houve retorno por parte do destinatário, tampouco identificamos qualquer mudança no comportamento do concorrente quanto à negativação do termo da marca.\n\nDiante disso, e como forma de formalizar mais uma vez a solicitação, nossa equipe irá viabilizar o reenvio da notificação por carta com Aviso de Recebimento (AR). Essa ação visa garantir um novo registro formal do pedido, com comprovação do recebimento, como último passo nesta etapa extrajudicial.\n\nAssim que houver atualização sobre o recebimento ou qualquer movimentação por parte do concorrente, manteremos vocês informados.\n\nFicamos à disposição para qualquer dúvida.\n\nAbraços,';
     } else if (apendice === 'D') {
-      assunto = 'Atualização sobre notificação extrajudicial – próximos passos possíveis | ' + cliente + ' - Branddi';
+      assunto = 'Atualização sobre Notificação Extrajudicial – Próximos Passos Possíveis | ' + cliente + ' - Branddi';
       corpo = 'Olá, pessoal! Tudo bem?\n\nSeguimos acompanhando o cenário da marca de vocês e gostaríamos de sinalizar que, mesmo após o envio da notificação extrajudicial realizada por meio do nosso escritório de advocacia parceiro, ainda estamos registrando anúncios ativos do concorrente ' + agressor + ' para o seu termo de marca.\n\nDiante disso, existem dois caminhos possíveis para os próximos passos:\n\n1) Aconselhamento Jurídico Interno (Branddi): agendar um bate-papo com o nosso jurídico interno, que poderá orientar quanto às opções legais e estratégicas disponíveis. Também podemos elaborar um dossiê completo do caso, reunindo todas as evidências capturadas.\n\n2) Continuidade com o Escritório de Advocacia Parceiro: conversa direta com o escritório que já enviou a notificação, que poderá esclarecer dúvidas e, se for do interesse de vocês, dar sequência ao processo com o ajuizamento da ação.\n\nEm último caso, caso não optem pela sequência do caso, sugerimos que o domínio seja adicionado em whitelist.\n\nEstamos à disposição para apoiar no que for necessário e garantir que a marca siga protegida. Nos avisem como preferem seguir.\n\nAbraços,';
     } else if (apendice === 'E') {
-      assunto = 'Atualização sobre notificação extrajudicial – suporte adicional disponível | ' + cliente + ' - Branddi';
+      assunto = 'Atualização sobre Notificação Extrajudicial – Suporte Adicional Disponível | ' + cliente + ' - Branddi';
       corpo = 'Olá, pessoal! Tudo bem?\n\nSeguimos monitorando o cenário da marca de vocês e, mesmo após o envio da notificação extrajudicial realizado internamente, ainda identificamos anúncios ativos do concorrente ' + agressor + ' para o termo da marca.\n\nSabemos que nem sempre a notificação inicial é suficiente para cessar a prática e, por isso, reforçamos que vocês contam com suporte adicional da Branddi:\n\n1) Reenvio via nosso escritório parceiro: novo envio da notificação com reforço jurídico especializado em Brand Bidding, com condições diferenciadas, inclusive para eventual ajuizamento da ação.\n\n2) Aconselhamento Jurídico Interno (Branddi): bate-papo com o nosso jurídico interno + dossiê completo do caso, reunindo todas as evidências capturadas.\n\nEm último caso, caso não optem pela sequência, sugerimos que o domínio seja adicionado em whitelist.\n\nEstamos à disposição. É só nos sinalizar como preferem seguir para que possamos organizar os encaminhamentos com agilidade.\n\nAbraços,';
     } else if (apendice === 'F') {
       assunto = 'Encerramento de tratativas com ' + agressor + ' – ' + cliente + ' | Branddi';
@@ -3636,7 +3649,12 @@ document.addEventListener('DOMContentLoaded', () => {
       '<div class="neag-sect">Comunicação sugerida (pronta para envio)</div>' +
       '<div class="neag-email"><div class="neag-email-subj">' + neagEsc(email.assunto || '(sem assunto)') + '</div>' +
       '<div class="neag-email-body">' + neagEsc(email.corpo) + '</div>' +
-      (email.apendice_usado ? '<div class="neag-hint">Modelo: Apêndice ' + neagEsc(email.apendice_usado) + '</div>' : '') + '</div>'
+      (email.apendice_usado ? '<div class="neag-hint">Modelo: Apêndice ' + neagEsc(email.apendice_usado) + '</div>' : '') + '</div>' +
+      '<div class="neag-form" style="margin-top:10px">' +
+        '<div class="neag-grp"><div class="neag-lbl">Enviar para (e-mail do cliente)</div><input class="neag-input" id="neag-to" type="email" placeholder="cliente@empresa.com"></div>' +
+        '<div class="neag-grp"><div class="neag-lbl">Cc (opcional)</div><input class="neag-input" id="neag-cc" type="email" placeholder="copia@empresa.com"></div>' +
+      '</div>' +
+      '<div id="neag-send-stat" class="neag-hint" style="margin-top:6px"></div>'
     ) : '';
     document.getElementById('neag-body').innerHTML =
       bloqueio +
@@ -3648,7 +3666,7 @@ document.addEventListener('DOMContentLoaded', () => {
       emailHtml;
     document.getElementById('neag-foot').innerHTML =
       '<button class="btn" onclick="neagCloseBtn()">Fechar</button>' +
-      (email.corpo ? '<button class="btn" onclick="neagCopiar()">📋 Copiar e-mail</button><button class="btn btn-brand" onclick="neagUsar()">Usar no comentário</button>' : '');
+      (email.corpo ? '<button class="btn" onclick="neagCopiar()">📋 Copiar</button><button class="btn" onclick="neagUsar()">Usar no comentário</button><button class="btn btn-brand" onclick="neagEnviarGmail()">📧 Enviar pelo Gmail</button>' : '');
   }
 
   function neagCopiar() {
@@ -3656,6 +3674,28 @@ document.addEventListener('DOMContentLoaded', () => {
     var txt = (e.assunto ? e.assunto + '\n\n' : '') + (e.corpo || '');
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(function () { alert('E-mail copiado.'); }, function () { alert('Não consegui copiar.'); });
     else alert('Cópia não suportada neste navegador.');
+  }
+
+  // ── Envio do e-mail pelo Gmail (via Edge Function gmail-send) ──
+  async function neagEnviarGmail() {
+    var e = NEAG.result && NEAG.result.email;
+    if (!e || !e.corpo) { alert('Gere a sugestão primeiro.'); return; }
+    var to = (neagVal('neag-to') || '').trim();
+    var cc = (neagVal('neag-cc') || '').trim();
+    var reMail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    if (!reMail.test(to)) { alert('Informe um e-mail de destinatário válido (ex.: cliente@empresa.com).'); return; }
+    if (cc && !reMail.test(cc)) { alert('O e-mail de cópia (Cc) é inválido.'); return; }
+    if (!confirm('Enviar este e-mail agora?\n\nPara: ' + to + (cc ? '\nCc: ' + cc : '') + '\nAssunto: ' + (e.assunto || ''))) return;
+    var stat = document.getElementById('neag-send-stat');
+    var setStat = function (txt, color) { if (stat) { stat.textContent = txt; stat.style.color = color || ''; } };
+    setStat('Enviando…', '');
+    try {
+      var r = await neagCallFn('gmail-send', { to: to, cc: cc || undefined, subject: e.assunto || '', body: e.corpo || '' });
+      if (r && r.sent) setStat('✅ Enviado para ' + to + (cc ? ' (cc ' + cc + ')' : ''), 'var(--green,#16a34a)');
+      else setStat('❌ ' + ((r && r.error) || 'Falha no envio'), 'var(--red,#dc2626)');
+    } catch (err) {
+      setStat('❌ ' + ((err && err.message) || String(err)), 'var(--red,#dc2626)');
+    }
   }
   function neagUsar() {
     var e = NEAG.result && NEAG.result.email; if (!e || !e.corpo) return;
@@ -3670,6 +3710,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.neagCalcular = neagCalcular;
   window.neagOnFase = neagOnFase;
   window.neagCopiar = neagCopiar;
+  window.neagEnviarGmail = neagEnviarGmail;
   window.neagUsar = neagUsar;
   window.neagCloseBtn = neagCloseBtn;
 
