@@ -3651,8 +3651,8 @@ document.addEventListener('DOMContentLoaded', () => {
       '<div class="neag-email-body">' + neagEsc(email.corpo) + '</div>' +
       (email.apendice_usado ? '<div class="neag-hint">Modelo: Apêndice ' + neagEsc(email.apendice_usado) + '</div>' : '') + '</div>' +
       '<div class="neag-form" style="margin-top:10px">' +
-        '<div class="neag-grp"><div class="neag-lbl">Enviar para (e-mail do cliente)</div><input class="neag-input" id="neag-to" type="email" placeholder="cliente@empresa.com"></div>' +
-        '<div class="neag-grp"><div class="neag-lbl">Cc (opcional)</div><input class="neag-input" id="neag-cc" type="email" placeholder="copia@empresa.com"></div>' +
+        '<div class="neag-grp"><div class="neag-lbl">Enviar para (separe vários por vírgula)</div><input class="neag-input" id="neag-to" type="text" placeholder="cliente1@empresa.com, cliente2@empresa.com"></div>' +
+        '<div class="neag-grp"><div class="neag-lbl">Cc (opcional, separe por vírgula)</div><input class="neag-input" id="neag-cc" type="text" placeholder="copia1@empresa.com, copia2@empresa.com"></div>' +
       '</div>' +
       '<div id="neag-send-stat" class="neag-hint" style="margin-top:6px"></div>'
     ) : '';
@@ -3680,18 +3680,20 @@ document.addEventListener('DOMContentLoaded', () => {
   async function neagEnviarGmail() {
     var e = NEAG.result && NEAG.result.email;
     if (!e || !e.corpo) { alert('Gere a sugestão primeiro.'); return; }
-    var to = (neagVal('neag-to') || '').trim();
-    var cc = (neagVal('neag-cc') || '').trim();
     var reMail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-    if (!reMail.test(to)) { alert('Informe um e-mail de destinatário válido (ex.: cliente@empresa.com).'); return; }
-    if (cc && !reMail.test(cc)) { alert('O e-mail de cópia (Cc) é inválido.'); return; }
-    if (!confirm('Enviar este e-mail agora?\n\nPara: ' + to + (cc ? '\nCc: ' + cc : '') + '\nAssunto: ' + (e.assunto || ''))) return;
+    var parse = function (v) { return String(v || '').split(/[,;]+/).map(function (x) { return x.trim(); }).filter(Boolean); };
+    var toArr = parse(neagVal('neag-to'));
+    var ccArr = parse(neagVal('neag-cc'));
+    if (!toArr.length) { alert('Informe ao menos um e-mail de destinatário.'); return; }
+    var bad = toArr.concat(ccArr).filter(function (x) { return !reMail.test(x); });
+    if (bad.length) { alert('E-mail(s) inválido(s): ' + bad.join(', ')); return; }
+    if (!confirm('Enviar este e-mail agora?\n\nPara: ' + toArr.join(', ') + (ccArr.length ? '\nCc: ' + ccArr.join(', ') : '') + '\nAssunto: ' + (e.assunto || ''))) return;
     var stat = document.getElementById('neag-send-stat');
     var setStat = function (txt, color) { if (stat) { stat.textContent = txt; stat.style.color = color || ''; } };
     setStat('Enviando…', '');
     try {
-      var r = await neagCallFn('gmail-send', { to: to, cc: cc || undefined, subject: e.assunto || '', body: e.corpo || '' });
-      if (r && r.sent) setStat('✅ Enviado para ' + to + (cc ? ' (cc ' + cc + ')' : ''), 'var(--green,#16a34a)');
+      var r = await neagCallFn('gmail-send', { to: toArr, cc: ccArr, subject: e.assunto || '', body: e.corpo || '' });
+      if (r && r.sent) setStat('✅ Enviado para ' + toArr.join(', '), 'var(--green,#16a34a)');
       else setStat('❌ ' + ((r && r.error) || 'Falha no envio'), 'var(--red,#dc2626)');
     } catch (err) {
       setStat('❌ ' + ((err && err.message) || String(err)), 'var(--red,#dc2626)');
