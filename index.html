@@ -3282,16 +3282,24 @@ document.addEventListener('DOMContentLoaded', () => {
     return { url: (c.url || '').replace(/\/+$/, ''), key: c.key || '', pipefy: pf || c.pipefy || '' };
   }
   function neagFnUrl(name) { return neagCfg().url + '/functions/v1/' + name; }
-  async function neagCallFn(name, payload) {
+  async function neagCallFn(name, payload, timeoutMs) {
     var cfg = neagCfg();
-    var r = await fetch(neagFnUrl(name), {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'Authorization': 'Bearer ' + cfg.key, 'apikey': cfg.key },
-      body: JSON.stringify(payload || {})
-    });
-    var j = null; try { j = await r.json(); } catch (e) {}
-    if (!r.ok || (j && j.error)) throw new Error((j && j.error) || ('HTTP ' + r.status));
-    return j;
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var tid = ctrl ? setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, timeoutMs || 20000) : null;
+    try {
+      var r = await fetch(neagFnUrl(name), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'Authorization': 'Bearer ' + cfg.key, 'apikey': cfg.key },
+        body: JSON.stringify(payload || {}),
+        signal: ctrl ? ctrl.signal : undefined
+      });
+      var j = null; try { j = await r.json(); } catch (e) {}
+      if (!r.ok || (j && j.error)) throw new Error((j && j.error) || ('HTTP ' + r.status));
+      return j;
+    } catch (e) {
+      if (e && e.name === 'AbortError') throw new Error('Tempo esgotado ao chamar ' + name);
+      throw e;
+    } finally { if (tid) clearTimeout(tid); }
   }
 
   // ── Helpers ──
@@ -3365,10 +3373,11 @@ document.addEventListener('DOMContentLoaded', () => {
       var opecId = ctx.linkOpec ? String(ctx.linkOpec).split('/').pop() : '';
       var token = cfg.pipefy;
       var pPipe = (opecId && token) ? neagCallFn('pipefy-card', { cardId: opecId, pipefyToken: token }).catch(function () { return null; }) : Promise.resolve(null);
-      var pBms = ctx.brand ? neagCallFn('bms-lookup', { brand: ctx.brand }).catch(function (e) { return { __err: String((e && e.message) || e) }; }) : Promise.resolve(null);
-      var pInpi = ctx.brand ? neagCallFn('inpi-lookup', { brand: ctx.brand }).catch(function (e) { return { __err: String((e && e.message) || e) }; }) : Promise.resolve(null);
-      var res = await Promise.all([pPipe, pBms, pInpi]);
-      var pf = res[0], bms = res[1], inpiR = res[2];
+      var pBms = ctx.brand ? neagCallFn('bms-lookup', { brand: ctx.brand }, 20000).catch(function (e) { return { __err: String((e && e.message) || e) }; }) : Promise.resolve(null);
+      // INPI roda em paralelo mas NÃO bloqueia a abertura do agente (site do INPI é lento/instável) — preenche depois.
+      var pInpi = ctx.brand ? neagCallFn('inpi-lookup', { brand: ctx.brand }, 20000).catch(function (e) { return { __err: String((e && e.message) || e) }; }) : Promise.resolve(null);
+      var res = await Promise.all([pPipe, pBms]);
+      var pf = res[0], bms = res[1];
 
       var comments = [], labels = [], phase = '';
       if (pf && pf.card) {
@@ -3407,14 +3416,24 @@ document.addEventListener('DOMContentLoaded', () => {
         termo: termo, ranking: ranking, freq: freq,
         posicionamento: recusa ? 'recusa' : 'sem', ciencia: abertura ? 'sim' : 'nao',
         topLeilao: topLeilao, aggressor: aggr, bmsFound: !!(bms && bms.found), bmsErro: bmsErro, pipeOk: !!(pf && pf.card),
-        inpiAuto: (inpiR && inpiR.ok && inpiR.inpiStatus) ? inpiR.inpiStatus : null,
-        inpiTotal: (inpiR && inpiR.ok) ? inpiR.total : null,
-        inpiVigor: (inpiR && inpiR.ok) ? inpiR.emVigor : null,
-        inpiErro: (inpiR && inpiR.__err) ? inpiR.__err : null
+        inpiAuto: null, inpiTotal: null, inpiVigor: null, inpiErro: null, inpiPendente: true
       };
       NEAG.comments = comments;
       neagRenderForm();
       neagAplicarAuto();
+      // INPI chega depois (não-bloqueante): preenche o seletor e o resumo quando responder.
+      pInpi.then(function (inpiR) {
+        if (!NEAG.auto) return;
+        NEAG.auto.inpiPendente = false;
+        NEAG.auto.inpiAuto = (inpiR && inpiR.ok && inpiR.inpiStatus) ? inpiR.inpiStatus : null;
+        NEAG.auto.inpiTotal = (inpiR && inpiR.ok) ? inpiR.total : null;
+        NEAG.auto.inpiVigor = (inpiR && inpiR.ok) ? inpiR.emVigor : null;
+        NEAG.auto.inpiErro = (inpiR && inpiR.__err) ? inpiR.__err : null;
+        var sel = document.getElementById('neag-inpi');
+        if (sel && NEAG.auto.inpiAuto && NEAG.auto.inpiAuto !== 'Sem registro' && (sel.value === 'Não localizado' || !sel.value)) sel.value = NEAG.auto.inpiAuto;
+        var st = document.getElementById('neag-inpi-stat');
+        if (st) st.textContent = neagInpiTxt(NEAG.auto);
+      });
     } catch (e) {
       console.error('neagSugerir:', e);
       NEAG.auto = null;
@@ -3429,6 +3448,16 @@ document.addEventListener('DOMContentLoaded', () => {
     var d = String(domain || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '');
     if (!d) return false;
     return NEAG_GENERICOS.some(function (t) { return d.indexOf(t) >= 0; });
+  }
+
+  // Texto do INPI no resumo (estado: consultando / achado / não localizado / falha).
+  function neagInpiTxt(a) {
+    if (!a) return 'INPI: —';
+    if (a.inpiPendente) return 'INPI: consultando…';
+    return (a.inpiAuto && a.inpiAuto !== 'Sem registro')
+      ? ('INPI: ' + a.inpiAuto + (a.inpiTotal ? ' — ' + a.inpiVigor + '/' + a.inpiTotal + ' em vigor' : '') + ' (auto)')
+      : (a.inpiErro ? 'INPI: falha — confira manualmente'
+        : (a.inpiAuto === 'Sem registro' ? ('INPI: nada encontrado para "' + ((NEAG.card && NEAG.card.brand) || '') + '" — confira a grafia/registro') : 'INPI: não consultado — confira'));
   }
 
   // ── Aplica os valores automáticos no formulário ──
@@ -3450,21 +3479,15 @@ document.addEventListener('DOMContentLoaded', () => {
     var segTxt = (segGen == null) ? 'Segmento: confirme (sem domínio no BMS)'
       : (segGen ? ('Segmento: Não — ' + dom + ' é marketplace/OTA genérico')
         : ('Segmento: Sim — ' + dom + ' é concorrente do nicho'));
-    // INPI: auto-preenche SÓ achados positivos (Nominativo/Misto/Arquivada). "Sem registro" (0 marcas) pode ser
-    // diferença de grafia do nome — deixa "Não localizado" pro analista conferir, em vez de bloquear a NE errado.
-    if (a.inpiAuto && a.inpiAuto !== 'Sem registro') neagSet('neag-inpi', a.inpiAuto);
-    var inpiTxt = (a.inpiAuto && a.inpiAuto !== 'Sem registro')
-      ? ('INPI: ' + a.inpiAuto + (a.inpiTotal ? ' — ' + a.inpiVigor + '/' + a.inpiTotal + ' em vigor' : '') + ' (auto)')
-      : (a.inpiErro ? 'INPI: falha — confira manualmente'
-        : (a.inpiAuto === 'Sem registro' ? ('INPI: nada encontrado para "' + (NEAG.card.brand || '') + '" — confira a grafia/registro') : 'INPI: não consultado — confira'));
-    var resumo = [
+    // INPI (não-bloqueante): texto via neagInpiTxt; o seletor é preenchido quando o INPI responde (ver neagSugerir).
+    var inpiTxt = neagInpiTxt(a);
+    var estaticos = [
       a.pipeOk ? 'Pipefy lido ✓' : 'Pipefy não lido',
       a.bmsErro ? ('BMS: falha — ' + a.bmsErro) : (a.bmsFound ? ('BMS: ' + (agg ? ('agressor ' + agg.domain + (agg.bestPosition != null ? ' · pos ' + agg.bestPosition : '') + (agg.agressividade14d != null ? ' · agr ' + agg.agressividade14d + '/10' : '') + (agg.termo ? ' · ' + agg.termo : '')) : 'campanha encontrada')) : 'BMS: marca não encontrada'),
-      segTxt,
-      inpiTxt
+      segTxt
     ].join(' · ');
     var body = document.getElementById('neag-body');
-    if (body) { var d = document.createElement('div'); d.className = 'neag-info'; d.textContent = '🤖 ' + resumo; body.insertBefore(d, body.firstChild); }
+    if (body) { var d = document.createElement('div'); d.className = 'neag-info'; d.innerHTML = '🤖 ' + neagEsc(estaticos) + ' · <span id="neag-inpi-stat">' + neagEsc(inpiTxt) + '</span>'; body.insertBefore(d, body.firstChild); }
   }
 
   // ── Helpers de formulário ──
@@ -3583,6 +3606,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var email = apendice ? neagEmail(apendice, {
       topLabel: topLabel, termoPuro: A === 25,
       posicao: (aggr && aggr.bestPosition != null) ? aggr.bestPosition : null,
+      dominio: (aggr && aggr.domain) ? aggr.domain : null,
       recusa: neagVal('neag-pos') === '15',
       ciencia: neagVal('neag-cien') === '5'
     }) : null;
@@ -3595,7 +3619,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var card = NEAG.card || {};
     var cliente = card.brand || '[CLIENTE]';
     var agressor = card.concorrente || '[AGRESSOR]';
-    var dominio = card.concorrente || '[DOMÍNIO]';
+    var dominio = ctx.dominio || card.concorrente || '[DOMÍNIO]';
     var termos = card.brand || '[TERMOS]';
     var posTxt = (ctx.posicao != null) ? ('a posição ' + ctx.posicao) : 'posição de destaque';
     var avisoA = ctx.termoPuro ? '' : '\n\nObs.: como o termo é composto/genérico, reforçamos que notificações sem o termo institucional da marca podem ter menor força e abrir margem a questionamentos — caso optem por seguir, trata-se de uma decisão com risco envolvido.';
