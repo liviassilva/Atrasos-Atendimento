@@ -3385,6 +3385,9 @@ document.addEventListener('DOMContentLoaded', () => {
         (pf.card.comments || []).forEach(function (x) { comments.push(x.text || ''); });
         (pf.card.labels || []).forEach(function (l) { labels.push(l.name || ''); });
       }
+      // Domínio do CONCORRENTE: o título do card OPEC é o domínio do agressor (ex.: "smarterflyer.com.br"). Só usa se parecer domínio.
+      var tituloOpec = (pf && pf.card && pf.card.title) ? String(pf.card.title).trim() : '';
+      var opecDomain = (/\./.test(tituloOpec) && !/\s/.test(tituloOpec)) ? tituloOpec.toLowerCase() : '';
       var blob = comments.join('  \n  ') + ' ' + phase;
       var fase = neagDetectarFase(phase, comments.join('   ')); // fase OPEC (forte) + comentários — ver convenção das 4 fases
       var abertura = /aberto/i.test(blob);
@@ -3402,7 +3405,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cn) {
           chosen = bms.aggressors.find(function (a) { var d = neagNormKey(a.domain); return d.indexOf(cn) >= 0 || cn.indexOf(d.replace(/(com|br|www)/g, '')) >= 0; });
         }
-        if (!chosen) chosen = bms.aggressors[0] || null;
+        if (!chosen) chosen = bms.aggressors[0] || null; // sem match do concorrente: usa o topo da lista p/ pré-preencher (o domínio do e-mail vem do card OPEC, não daqui).
         if (chosen) {
           termo = chosen.termo;
           ranking = chosen.bestPosition == null ? null : (chosen.bestPosition <= 5 ? 'top5' : (chosen.bestPosition <= 10 ? 'top10' : 'fora'));
@@ -3415,7 +3418,7 @@ document.addEventListener('DOMContentLoaded', () => {
       NEAG.auto = {
         termo: termo, ranking: ranking, freq: freq,
         posicionamento: recusa ? 'recusa' : 'sem', ciencia: abertura ? 'sim' : 'nao',
-        topLeilao: topLeilao, aggressor: aggr, bmsFound: !!(bms && bms.found), bmsErro: bmsErro, pipeOk: !!(pf && pf.card),
+        topLeilao: topLeilao, aggressor: aggr, opecDomain: opecDomain, bmsFound: !!(bms && bms.found), bmsErro: bmsErro, pipeOk: !!(pf && pf.card),
         inpiAuto: null, inpiTotal: null, inpiVigor: null, inpiErro: null, inpiPendente: true
       };
       NEAG.comments = comments;
@@ -3606,7 +3609,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var email = apendice ? neagEmail(apendice, {
       topLabel: topLabel, termoPuro: A === 25,
       posicao: (aggr && aggr.bestPosition != null) ? aggr.bestPosition : null,
-      dominio: (aggr && aggr.domain) ? aggr.domain : null,
+      dominio: (NEAG.auto && NEAG.auto.opecDomain) ? NEAG.auto.opecDomain : ((aggr && aggr.domain) ? aggr.domain : null),
       recusa: neagVal('neag-pos') === '15',
       ciencia: neagVal('neag-cien') === '5'
     }) : null;
