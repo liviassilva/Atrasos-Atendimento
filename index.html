@@ -3332,17 +3332,23 @@ document.addEventListener('DOMContentLoaded', () => {
     return { cardId: cardId, brand: brand, concorrente: concorrente, linkOpec: linkOpec, tipo: tipo };
   }
 
-  // ── Detecção de fase pelos comentários ──
-  // Detecta a fase pelo NOME da fase do card OPEC (sinal confiável da Jornada de Notificações),
-  // e NÃO pelo texto solto dos comentários (que dava falso-positivo, ex.: o "ar" de \bAR\b).
-  // Convenção do pipe OPEC: "...Notificação Extrajudicial" = NE digital (Fase 2);
-  // "Advogado"/"Litígio"/carta-AR/física = escalado (Fase 3); todo o resto (Novas Ocorrências,
-  // N1.*, Hotline, Mediação, tentativas, tratativas…) = triagem antes da NE (Fase 1).
-  function neagDetectarFase(faseNome) {
-    var p = (faseNome || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
-    if (/advogad|litigio|carta com ar|aviso de recebimento|notifica\w*\s*fisica/.test(p)) return 'Fase 3';
-    if (/notifica\w*\s*extrajudicial/.test(p)) return 'Fase 2';
-    return 'Fase 1';
+  // ── Detecção da fase do caso (escada de escalonamento, 4 fases) ──
+  // Usa o NOME da fase do card OPEC (sinal forte) + os comentários. Convenção:
+  //   Fase 1 NE Branddi   = a NE do TIME (fase OPEC "Notificação Extrajudicial" / "NE Branddi" nos comentários).
+  //                         É o gatilho da triagem — atendimento avalia sugerir a NE DIGITAL ao cliente. (PADRÃO)
+  //   Fase 2 NE Digital   = o CLIENTE já enviou a NE digital (exige a palavra "digital" nos comentários).
+  //   Fase 3 NE Física/AR = carta com AR / notificação física.
+  //   Fase 4 Litígio      = advogado / litígio / ação judicial (fase OPEC "Litígio"/"Advogado" ou comentários).
+  // IMPORTANTE: a "Notificação Extrajudicial" do OPEC é a NE Branddi (do time) — NÃO é a NE digital do cliente.
+  function neagDetectarFase(faseNome, comentarios) {
+    var deburr = function (s) { return (s || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, ''); };
+    var p = deburr(faseNome);      // fase OPEC (forte)
+    var c = deburr(comentarios);   // comentários do card
+    var all = p + '   ' + c;
+    if (/advogad|litigio|acao judicial|ajuiza|processo judicial/.test(all)) return 'Fase 4';                       // Litígio
+    if (/carta com ar|aviso de recebimento|notifica\w*\s*fisica|ne fisica|notificacao fisica/.test(all)) return 'Fase 3'; // NE Física/AR
+    if (/ne\s*digital|notifica\w*\s*\w*\s*digital|extrajudicial\s*digital/.test(c)) return 'Fase 2';               // NE Digital (só comentários)
+    return 'Fase 1';                                                                                               // NE Branddi (padrão)
   }
 
   // ── Orquestração: puxa BMS + Pipefy e pré-preenche ──
@@ -3370,7 +3376,7 @@ document.addEventListener('DOMContentLoaded', () => {
         (pf.card.labels || []).forEach(function (l) { labels.push(l.name || ''); });
       }
       var blob = comments.join('  \n  ') + ' ' + phase;
-      var fase = neagDetectarFase(phase); // usa o NOME da fase do card OPEC (confiável), não o texto dos comentários
+      var fase = neagDetectarFase(phase, comments.join('   ')); // fase OPEC (forte) + comentários — ver convenção das 4 fases
       var abertura = /aberto/i.test(blob);
       var recusa = /(neg(ou|aram|ou-se|a-se)[^.]{0,40}(negativ|contat))|n[ãa]o (deseja|quer)( mais)? (ser )?contat|recus(ou|a-se|aram)|n[ãa]o deseja contato/i.test(blob);
       var labLow = labels.map(function (s) { return (s || '').toLowerCase(); });
@@ -3454,15 +3460,18 @@ document.addEventListener('DOMContentLoaded', () => {
     return '<div class="neag-grp"><div class="neag-lbl">' + neagEsc(label) + '</div><select class="neag-input" id="' + id + '">' + o + '</select>' + (hint ? '<div class="neag-hint">' + neagEsc(hint) + '</div>' : '') + '</div>';
   }
   function neagCtxHtml(fase) {
-    if (fase === 'Fase 2') {
+    if (fase === 'Fase 2') { // NE Digital — próximo passo: NE física / AR
       return neagSel('neag-sucesso', 'O concorrente cessou após a NE digital?', [['nao', 'Não'], ['sim', 'Sim']])
         + neagSel('neag-autoriz', 'Cliente autorizou a NE física?', [['pendente', 'Pendente'], ['sim', 'Sim'], ['nao', 'Não']]);
     }
-    if (fase === 'Fase 3') {
+    if (fase === 'Fase 3') { // NE Física / AR — próximo passo: litígio
       return neagSel('neag-sucesso', 'O concorrente cessou após a NE física?', [['nao', 'Não'], ['sim', 'Sim']])
         + neagSel('neag-via', 'Via do litígio', [['pffa', 'Escritório parceiro / PFFA'], ['interno', 'Reforço interno']]);
     }
-    return '<div class="neag-hint" style="grid-column:1/-1">Fase 1 — triagem. A decisão sai do score (e do filtro INPI).</div>';
+    if (fase === 'Fase 4') { // Litígio — acompanhamento jurídico
+      return neagSel('neag-via', 'Via do acompanhamento jurídico', [['pffa', 'Escritório parceiro / PFFA'], ['interno', 'Reforço interno']]);
+    }
+    return '<div class="neag-hint" style="grid-column:1/-1">Fase 1 — NE Branddi (a NE do time já foi enviada). A decisão de sugerir a NE digital ao cliente sai do score (e do filtro INPI).</div>';
   }
 
   // ── Formulário ──
@@ -3479,7 +3488,7 @@ document.addEventListener('DOMContentLoaded', () => {
       '</div>' +
       '<div class="neag-hint" style="margin:6px 0 10px">Confirme os campos (pré-preenchidos quando dá) e clique em Calcular sugestão. Roda tudo no navegador.</div>' +
       '<div class="neag-form">' +
-        neagSel('neag-fase', 'Fase do caso', [['Fase 1', 'Fase 1 — Triagem'], ['Fase 2', 'Fase 2 — NE digital enviada'], ['Fase 3', 'Fase 3 — NE física enviada']], 'Detectado dos comentários — ajuste se preciso') +
+        neagSel('neag-fase', 'Fase do caso', [['Fase 1', 'Fase 1 — NE Branddi (NE do time enviada)'], ['Fase 2', 'Fase 2 — NE Digital (cliente enviou)'], ['Fase 3', 'Fase 3 — NE Física / AR'], ['Fase 4', 'Fase 4 — Litígio']], 'Detectado da fase OPEC + comentários — ajuste se preciso') +
         '<div class="neag-grp"><div class="neag-lbl">Status no INPI</div><select class="neag-input" id="neag-inpi">' +
           '<option value="Nominativo">Nominativo (ativo)</option><option value="Misto">Misto (ativo)</option>' +
           '<option value="Sem registro">Sem registro</option><option value="Arquivada">Arquivada</option>' +
@@ -3539,19 +3548,22 @@ document.addEventListener('DOMContentLoaded', () => {
     var decisao = '', apendice = null;
     if (bloqueado) {
       decisao = 'Reprovado no filtro INPI (marca ' + inpi + '). Não seguir para NE, salvo orientação expressa do Jurídico, do CS Front ou do cliente.';
-    } else if (fase === 'Fase 1') {
+    } else if (fase === 'Fase 1') { // NE Branddi → avaliar sugerir a NE digital ao cliente
       if (total < 11) { decisao = 'Pouca agressividade (score ' + total + '/100). Não é viável seguir para NE agora — decisão: sugerir whitelist ao cliente (e-mail abaixo) e seguir monitorando.'; apendice = 'F'; }
-      else { decisao = 'Caso viável para NE (score ' + total + '/100, ' + topLabel + '). Decisão: sugerir ao cliente o envio de Notificação Extrajudicial — usar o e-mail abaixo. Em paralelo, ativar a contraprova dos termos do concorrente.'; apendice = 'B'; }
-    } else if (fase === 'Fase 2') {
+      else { decisao = 'Caso viável (score ' + total + '/100, ' + topLabel + '). A NE do time (NE Branddi) já foi enviada — decisão: sugerir ao cliente o envio da NE DIGITAL ao concorrente (e-mail abaixo). Em paralelo, ativar a contraprova dos termos do concorrente.'; apendice = 'B'; }
+    } else if (fase === 'Fase 2') { // NE Digital → avaliar escalar para NE física / AR
       if (neagVal('neag-sucesso') === 'sim') decisao = 'Encerrar — o concorrente cessou a prática após a NE digital.';
       else if (total < 13) { decisao = 'Agressividade baixa (score ' + total + '/100 < 13). Recomendar inclusão em whitelist.'; apendice = 'F'; }
       else { var aut = neagVal('neag-autoriz');
-        if (aut === 'sim') { decisao = 'Escalar para NE física (carta com AR) — score ' + total + '/100 e cliente autorizou.'; apendice = 'C'; }
-        else { decisao = 'Caso viável e sem resolução (score ' + total + '/100' + (neagVal('neag-pos') === '15' ? ', com recusa expressa' : '') + '). Decisão: SUGERIR ao cliente o envio formal da Notificação Extrajudicial (via escritório parceiro ou carta com AR) — usar o e-mail abaixo.'; apendice = 'B'; } }
-    } else {
+        if (aut === 'sim') { decisao = 'Sem resolução após a NE digital e cliente autorizou — escalar para NE física (carta com AR). Usar o e-mail abaixo.'; apendice = 'C'; }
+        else { decisao = 'Sem resolução após a NE digital (score ' + total + '/100' + (neagVal('neag-pos') === '15' ? ', com recusa expressa' : '') + '). Decisão: SUGERIR ao cliente o envio da NE FÍSICA (carta com AR) — usar o e-mail abaixo.'; apendice = 'C'; } }
+    } else if (fase === 'Fase 3') { // NE Física / AR → avaliar litígio
       if (neagVal('neag-sucesso') === 'sim') decisao = 'Encerrar — o concorrente cessou a prática após a NE física.';
       else if (total < 15) { decisao = 'Agressividade baixa (score ' + total + '/100 < 15). Recomendar inclusão em whitelist.'; apendice = 'F'; }
       else { var via = neagVal('neag-via'); decisao = 'Score ' + total + '/100 ≥ 15 e sem resolução após a NE física. Próximo passo: litígio / aconselhamento jurídico (' + (via === 'interno' ? 'reforço interno + escritório parceiro' : 'via escritório parceiro / PFFA') + ').'; apendice = via === 'interno' ? 'E' : 'D'; }
+    } else { // Fase 4 — Litígio (acompanhamento jurídico)
+      var via2 = neagVal('neag-via');
+      decisao = 'Caso já em via jurídica / litígio. Próximo passo: acompanhamento jurídico (' + (via2 === 'interno' ? 'reforço interno + escritório parceiro' : 'via escritório parceiro / PFFA') + ') e dossiê completo das evidências.'; apendice = via2 === 'interno' ? 'E' : 'D';
     }
 
     var aggr = NEAG.auto ? NEAG.auto.aggressor : null;
@@ -3602,6 +3614,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return { assunto: assunto, corpo: corpo, apendice_usado: apendice };
   }
 
+  var NEAG_FASE_LABEL = { 'Fase 1': 'Fase 1 — NE Branddi', 'Fase 2': 'Fase 2 — NE Digital', 'Fase 3': 'Fase 3 — NE Física / AR', 'Fase 4': 'Fase 4 — Litígio' };
   var NEAG_LABELS = {
     A_termo: 'A · Característica do termo (máx 25)', B_segmento: 'B · Relação com segmento (máx 20)',
     C_ameaca: 'C · Ameaça do agressor — agressividade × ranking (máx 15)', D_frequencia: 'D · Frequência / recorrência (máx 15)',
@@ -3627,7 +3640,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ) : '';
     document.getElementById('neag-body').innerHTML =
       bloqueio +
-      '<div class="neag-row"><span class="neag-badge">📌 ' + neagEsc(o.fase || '—') + '</span><span class="neag-badge alt">INPI: ' + neagEsc(o.inpi || '—') + '</span></div>' +
+      '<div class="neag-row"><span class="neag-badge">📌 ' + neagEsc(NEAG_FASE_LABEL[o.fase] || o.fase || '—') + '</span><span class="neag-badge alt">INPI: ' + neagEsc(o.inpi || '—') + '</span></div>' +
       '<div class="neag-sect">Score de agressividade</div><table class="neag-score"><tbody>' + rows + totalRow + '</tbody></table>' +
       '<div class="neag-sect">Pontos de atenção</div><div>' + atencao + '</div>' +
       '<div class="neag-sect">Dados ausentes</div><div>' + ausentes + '</div>' +
