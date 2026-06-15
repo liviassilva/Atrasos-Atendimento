@@ -2136,32 +2136,25 @@ function renderResumo() {
     return true;
   }
 
-  // Atrasos stats — só conta o que foi feito HOJE (mantém histórico no Supabase)
+  // Atrasos por carteira — TOTAL = todos os cards em atraso do dia vigente (MESMA base da aba "Tarefas em Atraso").
+  // Conc. = finalizados HOJE (horário Brasília); Pend. = o restante. Não descartar os "Sim" de dias passados do total.
   let atrasoTotal=0, atrasoPendente=0, atrasoConcluido=0;
   const atrasoByCarteira = {};
   CARTEIRAS_ALL.forEach(c => {
-    // Cards pendentes hoje (em allData, não finalizados)
-    const cardsHoje = getCards('atrasos', c);
-    const pendentes = cardsHoje.filter(r => controlData[c]?.[r.id]?.finalizado !== 'Sim').length;
-    // Cards concluídos HOJE (finalizado=Sim com updated_at de hoje)
-    const sim = Object.values(controlData[c] || {}).filter(v => isFinalizadoHoje(v)).length;
-    const total = pendentes + sim;
-    atrasoByCarteira[c] = { total, sim, nao: pendentes };
+    const cards = getCards('atrasos', c);                 // allData[`atrasos_${c}`] — idêntico ao badge da aba
+    const total = cards.length;
+    const sim   = cards.filter(r => isFinalizadoHoje(controlData[c]?.[r.id])).length;
+    const nao   = total - sim;
+    atrasoByCarteira[c] = { total, sim, nao };
     atrasoTotal     += total;
     atrasoConcluido += sim;
-    atrasoPendente  += pendentes;
+    atrasoPendente  += nao;
   });
 
-  // CS - Negativações stats — concluídos só de hoje
-  const negPend    = CARTEIRAS_ALL.reduce((n,c) => n + (allData[`negacoes_${c}`]||[]).filter(r => controlData[c]?.[r.id]?.finalizado !== 'Sim').length, 0);
-  const negSim     = CARTEIRAS_ALL.reduce((n,c) => {
-    return n + Object.entries(controlData[c]||{}).filter(([id,v]) => {
-      const card = (allData[`negacoes_${c}`]||[]).find(x=>x.id===id);
-      return isFinalizadoHoje(v) && card;
-    }).length;
-  }, 0);
-  const negNao     = negPend;
-  const negTotal   = negPend + negSim;
+  // CS - Negativações — TOTAL = todos os cards em atraso do dia (MESMA base da aba); Conc. = finalizados HOJE; Pend. = o resto.
+  const negTotal   = CARTEIRAS_ALL.reduce((n,c) => n + (allData[`negacoes_${c}`]||[]).length, 0);
+  const negSim     = CARTEIRAS_ALL.reduce((n,c) => n + (allData[`negacoes_${c}`]||[]).filter(r => isFinalizadoHoje(controlData[c]?.[r.id])).length, 0);
+  const negNao     = negTotal - negSim;
 
   // Outros stats
   const tipoTotals = { 'Vencidos na Fase':0, 'Desatualizados':0, 'Cadastro de Marketplace':0 };
@@ -3417,6 +3410,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // ── Detecção de segmento (determinística, sem IA): marketplace/OTA/comparador/ad-network = genérico (Não);
+  //    concorrente específico do nicho = Sim. O BMS não guarda segmento, então usamos esta lista curada. ──
+  var NEAG_GENERICOS = ['mercadolivre', 'mercadolibre', 'amazon', 'shopee', 'magazineluiza', 'magalu', 'americanas', 'casasbahia', 'pontofrio', 'submarino', 'aliexpress', 'shein', 'ebay', 'kabum', 'netshoes', 'dafiti', 'enjoei', 'olx', 'elo7', 'madeiramadeira', 'carrefour', 'extra.com', 'paguemenos', 'drogasil', 'drogaraia', 'booking', 'airbnb', 'decolar', 'hoteis.com', 'hotels.com', 'trivago', 'expedia', 'kayak', 'despegar', 'hotelurbano', 'hurb', 'tripadvisor', 'getyourguide', 'civitatis', 'viator', 'maxmilhas', '123milhas', 'momondo', 'skyscanner', 'zarpo', 'latam', 'voegol', 'voeazul', 'buscape', 'zoom.com', 'bondfaro', 'jacotei', 'meliuz', 'cuponomia', 'googleshopping', 'googleadservices', 'googlesyndication', 'doubleclick', 'criteo', 'taboola', 'outbrain'];
+  function neagEhGenerico(domain) {
+    var d = String(domain || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '');
+    if (!d) return false;
+    return NEAG_GENERICOS.some(function (t) { return d.indexOf(t) >= 0; });
+  }
+
   // ── Aplica os valores automáticos no formulário ──
   function neagAplicarAuto() {
     var a = NEAG.auto; if (!a) return;
@@ -3429,10 +3431,18 @@ document.addEventListener('DOMContentLoaded', () => {
     var av = (a.aggressor && a.aggressor.agressividade14d != null) ? a.aggressor.agressividade14d : null;
     if (av != null) neagSet('neag-agr', av >= 8 ? 'alta' : av >= 4 ? 'media' : av > 0 ? 'baixa' : 'minima');
     var agg = a.aggressor;
+    // Segmento: auto pelo domínio do agressor (genérico = Não / específico = Sim). null = sem domínio, analista decide.
+    var dom = (agg && agg.domain) || '';
+    var segGen = dom ? neagEhGenerico(dom) : null;
+    if (dom) neagSet('neag-seg', segGen ? 0 : 20);
+    var segTxt = (segGen == null) ? 'Segmento: confirme (sem domínio no BMS)'
+      : (segGen ? ('Segmento: Não — ' + dom + ' é marketplace/OTA genérico')
+        : ('Segmento: Sim — ' + dom + ' é concorrente do nicho'));
     var resumo = [
       a.pipeOk ? 'Pipefy lido ✓' : 'Pipefy não lido',
       a.bmsErro ? ('BMS: falha — ' + a.bmsErro) : (a.bmsFound ? ('BMS: ' + (agg ? ('agressor ' + agg.domain + (agg.bestPosition != null ? ' · pos ' + agg.bestPosition : '') + (agg.agressividade14d != null ? ' · agr ' + agg.agressividade14d + '/10' : '') + (agg.termo ? ' · ' + agg.termo : '')) : 'campanha encontrada')) : 'BMS: marca não encontrada'),
-      '➡ confirme Segmento e INPI.'
+      segTxt,
+      '➡ confirme INPI.'
     ].join(' · ');
     var body = document.getElementById('neag-body');
     if (body) { var d = document.createElement('div'); d.className = 'neag-info'; d.textContent = '🤖 ' + resumo; body.insertBefore(d, body.firstChild); }
