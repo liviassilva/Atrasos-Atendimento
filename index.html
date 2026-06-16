@@ -3486,7 +3486,10 @@ document.addEventListener('DOMContentLoaded', () => {
     neagSet('neag-pos', a.posicionamento === 'recusa' ? 15 : 5);
     neagSet('neag-cien', a.ciencia === 'sim' ? 5 : 0);
     neagSet('neag-tag', a.topLeilao === 'ativo' ? 5 : a.topLeilao === 'inativo' ? 0 : '');
-    var av = (a.aggressor && a.aggressor.agressividade14d != null) ? a.aggressor.agressividade14d : null;
+    // Agressividade = o valor PRÓPRIO do BMS por concorrente (asProfile, da coleção aggressorProfileIndex),
+    // NÃO a soma de pontos (agressividade14d), que estoura em 10 p/ qualquer concorrente ativo (dava "Alta" errado).
+    // Conferido: Pacco/mercadolivre asProfile 8.57 → Alta; CabeCasa/mercadolivre asProfile 0.8 → Baixa. Tabela: 8+ Alta, 4–8 Média, 0–4 Baixa, sem/0 Mínima.
+    var av = (a.aggressor && a.aggressor.asProfile != null) ? a.aggressor.asProfile : null;
     if (av != null) neagSet('neag-agr', av >= 8 ? 'alta' : av >= 4 ? 'media' : av > 0 ? 'baixa' : 'minima');
     var agg = a.aggressor;
     // Segmento: auto pelo domínio do agressor (genérico = Não / específico = Sim). null = sem domínio, analista decide.
@@ -3500,7 +3503,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var inpiTxt = neagInpiTxt(a);
     var estaticos = [
       a.pipeOk ? 'Pipefy lido ✓' : 'Pipefy não lido',
-      a.bmsErro ? ('BMS: falha — ' + a.bmsErro) : (a.bmsFound ? ('BMS: ' + (agg ? ('agressor ' + agg.domain + (agg.bestPosition != null ? ' · pos ' + agg.bestPosition : '') + (agg.agressividade14d != null ? ' · agr ' + agg.agressividade14d + '/10' : '') + (agg.termo ? ' · ' + agg.termo : '')) : 'campanha encontrada')) : 'BMS: marca não encontrada'),
+      a.bmsErro ? ('BMS: falha — ' + a.bmsErro) : (a.bmsFound ? ('BMS: ' + (agg ? ('agressor ' + agg.domain + (agg.bestPosition != null ? ' · pos ' + agg.bestPosition : '') + (agg.asProfile != null ? ' · agr ' + (Math.round(agg.asProfile * 100) / 100) + '/10' : '') + (agg.termo ? ' · ' + agg.termo : '')) : 'campanha encontrada')) : 'BMS: marca não encontrada'),
       segTxt
     ].join(' · ');
     var body = document.getElementById('neag-body');
