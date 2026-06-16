@@ -3342,9 +3342,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Detecção da fase do caso (escada de escalonamento, 4 fases) ──
   // Usa o NOME da fase do card OPEC (sinal forte) + os comentários. Convenção:
-  //   Fase 1 NE Branddi   = a NE do TIME (fase OPEC "Notificação Extrajudicial" / "NE Branddi" nos comentários).
-  //                         É o gatilho da triagem — atendimento avalia sugerir a NE DIGITAL ao cliente. (PADRÃO)
-  //   Fase 2 NE Digital   = o CLIENTE já enviou a NE digital (exige a palavra "digital" nos comentários).
+  //   Fase 1 NE Branddi   = estágio da NE do TIME / triagem — gatilho do atendimento. (PADRÃO)
+  //   Fase 2 NE Digital   = a NE digital FOI ENVIADA ao concorrente. Quem envia é a BRANDDI / o escritório
+  //                         parceiro (PFFA, hoje F&F) ou a Moriki — NÃO o cliente. Próximo passo: NE física.
   //   Fase 3 NE Física/AR = carta com AR / notificação física.
   //   Fase 4 Litígio      = advogado / litígio / ação judicial (fase OPEC "Litígio"/"Advogado" ou comentários).
   // IMPORTANTE: a "Notificação Extrajudicial" do OPEC é a NE Branddi (do time) — NÃO é a NE digital do cliente.
@@ -3541,7 +3541,7 @@ document.addEventListener('DOMContentLoaded', () => {
       '</div>' +
       '<div class="neag-hint" style="margin:6px 0 10px">Confirme os campos (pré-preenchidos quando dá) e clique em Calcular sugestão. Roda tudo no navegador.</div>' +
       '<div class="neag-form">' +
-        neagSel('neag-fase', 'Fase do caso', [['Fase 1', 'Fase 1 — NE Branddi (NE do time enviada)'], ['Fase 2', 'Fase 2 — NE Digital (cliente enviou)'], ['Fase 3', 'Fase 3 — NE Física / AR'], ['Fase 4', 'Fase 4 — Litígio']], 'Detectado da fase OPEC + comentários — ajuste se preciso') +
+        neagSel('neag-fase', 'Fase do caso', [['Fase 1', 'Fase 1 — NE Branddi (NE do time enviada)'], ['Fase 2', 'Fase 2 — NE Digital (enviada pela Branddi/escritório)'], ['Fase 3', 'Fase 3 — NE Física / AR'], ['Fase 4', 'Fase 4 — Litígio']], 'Detectado da fase OPEC + comentários — ajuste se preciso') +
         '<div class="neag-grp"><div class="neag-lbl">Status no INPI</div><select class="neag-input" id="neag-inpi">' +
           '<option value="Nominativo">Nominativo (ativo)</option><option value="Misto">Misto (ativo)</option>' +
           '<option value="Sem registro">Sem registro</option><option value="Arquivada">Arquivada</option>' +
