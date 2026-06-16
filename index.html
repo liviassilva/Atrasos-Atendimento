@@ -3359,8 +3359,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (/litigio/.test(p)) return 'Fase 4';
     // 2) NE FÍSICA / AR: carta física / aviso de recebimento (fase OPEC ou comentário explícito).
     if (/carta com ar|aviso de recebimento|notifica\w*\s*fisica|ne fisica|notificacao fisica/.test(p + '   ' + c)) return 'Fase 3';
-    // 3) NE DIGITAL: o cliente já enviou a NE digital (exige a palavra "digital" nos comentários).
-    if (/ne\s*digital|notifica\w*\s*\w*\s*digital|extrajudicial\s*digital/.test(c)) return 'Fase 2';
+    // 3) NE JÁ ENVIADA ao concorrente (NE digital/PFFA/Moriki disparada) OU menção a "NE digital" → Fase 2.
+    //    "enviad... ao concorrente/agressor" é específico: NÃO casa com "sugestão de NE", nem com o texto
+    //    dos e-mails ("envio da NE"), nem com "NE será enviada à PFFA" (pré-envio p/ assinatura do escritório).
+    if (/enviad[ao]\b[^.\n]{0,20}(concorrente|agressor)/.test(c) || /\bne\s*digital|notifica\w*\s*\w*\s*digital|extrajudicial\s*digital/.test(c)) return 'Fase 2';
     // 4) PADRÃO: NE Branddi (jornada do time no OPEC — gatilho da triagem do atendimento).
     return 'Fase 1';
   }
@@ -3415,10 +3417,11 @@ document.addEventListener('DOMContentLoaded', () => {
         var chosen = chosenIdx >= 0 ? bms.aggressors[chosenIdx] : (bms.aggressors[0] || null); // sem match: usa o topo p/ pré-preencher (o domínio do e-mail vem do card OPEC, não daqui).
         if (chosen) {
           termo = chosen.termo;
-          // POSIÇÃO NO RANKING = posição do concorrente na lista de agressores do BMS (ordenada por agressividade 14d),
-          // que é o que o BMS mostra (ex.: Mercado Livre = 10º). NÃO é a posição do anúncio (bestPosition).
-          // Só preenche quando o concorrente foi REALMENTE achado (no fallback p/ o topo, deixa em branco p/ o analista).
-          rankPos = chosenIdx >= 0 ? (chosenIdx + 1) : null;
+          // POSIÇÃO NO RANKING = ranking do concorrente entre os AGRESSORES no BMS (excluindo o domínio do
+          // próprio cliente), ordenado por agressividade(14d) e, em empate, pelos pontos de agressão — que é
+          // o que o BMS mostra (ex.: Mercado Livre é 1º no Pacco). NÃO é a posição do anúncio (bestPosition).
+          // Só preenche quando o concorrente foi REALMENTE achado (no fallback p/ o topo, deixa em branco).
+          rankPos = (chosenIdx >= 0 && chosen.rank != null) ? chosen.rank : null;
           ranking = rankPos == null ? null : (rankPos <= 5 ? 'top5' : (rankPos <= 10 ? 'top10' : 'fora'));
           freq = (chosen.occ14d > 0 && chosen.occ7d > 0) ? 'alta' : 'baixa';
           aggr = chosen;
