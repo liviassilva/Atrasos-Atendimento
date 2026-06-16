@@ -3705,14 +3705,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ── Assinatura por carteira (escolhida automaticamente) ──
+  // Fotos hospedadas no GitHub (raw) — pra trocar uma foto, basta subir o arquivo com o mesmo nome.
+  var NEAG_FOTO_BASE = 'https://raw.githubusercontent.com/liviassilva/Atrasos-Atendimento/main/';
   var NEAG_ASSINATURAS = {
-    'Platinum 1': { nome: 'Karoline Silva', cargo: 'Analista de Customer Success', equipe: 'Equipe Operacional', email: 'karoline.silva@branddi.com' },
-    'Platinum 2': { nome: 'Alícia Cristina Bortolote', cargo: 'Squad Leader', equipe: 'Equipe de Customer Success', email: 'alicia.bortolote@branddi.com' },
-    'Black 1': { nome: 'Talita Nicolau', cargo: 'Customer Success', equipe: 'Equipe de Customer Success', email: 'talita.nicolau@branddi.com' },
-    'Black 2': { nome: 'Julia Camargo', cargo: 'Customer Success Manager', equipe: 'Equipe de Customer Success', email: 'julia.camargo@branddi.com' },
-    'Black 3': { nome: 'Giovanna Araujo', cargo: 'Squad Leader', equipe: 'Equipe de Customer Success', email: 'giovanna.araujo@branddi.com' },
-    'Titanium 1': { nome: 'Julia Roschel', cargo: 'Analista de Customer Success', equipe: 'Equipe de Atendimento', email: 'julia.roschel@branddi.com' },
-    'Titanium 2': { nome: 'Ana Vitória', cargo: 'Analista de Customer Success', equipe: 'Equipe de Customer Success', email: 'vitoria.sena@branddi.com' }
+    'Platinum 1': { nome: 'Karoline Silva', cargo: 'Analista de Customer Success', equipe: 'Equipe Operacional', email: 'karoline.silva@branddi.com', foto: NEAG_FOTO_BASE + 'karoline.png.png' },
+    'Platinum 2': { nome: 'Alícia Cristina Bortolote', cargo: 'Squad Leader', equipe: 'Equipe de Customer Success', email: 'alicia.bortolote@branddi.com', foto: NEAG_FOTO_BASE + 'alicia-cristina.png.png' },
+    'Black 1': { nome: 'Talita Nicolau', cargo: 'Customer Success', equipe: 'Equipe de Customer Success', email: 'talita.nicolau@branddi.com', foto: NEAG_FOTO_BASE + 'talita-nicolau.png.png' },
+    'Black 2': { nome: 'Julia Camargo', cargo: 'Customer Success Manager', equipe: 'Equipe de Customer Success', email: 'julia.camargo@branddi.com', foto: NEAG_FOTO_BASE + 'julia-camargo.png.png' },
+    'Black 3': { nome: 'Giovanna Araujo', cargo: 'Squad Leader', equipe: 'Equipe de Customer Success', email: 'giovanna.araujo@branddi.com', foto: NEAG_FOTO_BASE + 'giovanna.png.png' },
+    'Titanium 1': { nome: 'Julia Roschel', cargo: 'Analista de Customer Success', equipe: 'Equipe de Atendimento', email: 'julia.roschel@branddi.com', foto: NEAG_FOTO_BASE + 'julia-roschel.png.png' },
+    'Titanium 2': { nome: 'Ana Vitória', cargo: 'Analista de Customer Success', equipe: 'Equipe de Customer Success', email: 'vitoria.sena@branddi.com', foto: NEAG_FOTO_BASE + 'ana-vitoria.png.png' }
   };
   // Descobre a carteira do card (o modal não passa; pega do dado do dashboard em allData).
   function neagCarteira() {
@@ -3726,11 +3728,13 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {}
     return '';
   }
-  // Monta a assinatura HTML do analista responsável pela carteira (sem foto/botões por enquanto).
+  // Monta a assinatura HTML do analista responsável pela carteira (foto em círculo + dados).
   function neagAssinaturaHtml(carteira) {
     var a = NEAG_ASSINATURAS[carteira];
     if (!a) return '';
-    return '<table cellpadding="0" cellspacing="0" style="margin-top:22px;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif"><tr><td style="padding:0">' +
+    var foto = a.foto ? '<td style="padding:0 16px 0 0;vertical-align:middle"><img src="' + neagEsc(a.foto) + '" width="80" height="80" alt="' + neagEsc(a.nome) + '" style="display:block;width:80px;height:80px;border-radius:50%;object-fit:cover;border:0;outline:none;text-decoration:none" /></td>' : '';
+    return '<table cellpadding="0" cellspacing="0" style="margin-top:22px;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif"><tr>' + foto +
+      '<td style="padding:0;vertical-align:middle">' +
       '<div style="font-size:15px;font-weight:bold;color:#149c8e;line-height:1.35">' + neagEsc(a.nome) + '</div>' +
       '<div style="font-size:13px;color:#333;line-height:1.35">' + neagEsc(a.cargo) + '</div>' +
       '<div style="font-size:12px;color:#666;margin-top:8px;line-height:1.35">' + neagEsc(a.equipe) + '</div>' +
