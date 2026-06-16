@@ -3350,13 +3350,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // IMPORTANTE: a "Notificação Extrajudicial" do OPEC é a NE Branddi (do time) — NÃO é a NE digital do cliente.
   function neagDetectarFase(faseNome, comentarios) {
     var deburr = function (s) { return (s || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, ''); };
-    var p = deburr(faseNome);      // fase OPEC (forte)
-    var c = deburr(comentarios);   // comentários do card
-    var all = p + '   ' + c;
-    if (/advogad|litigio|acao judicial|ajuiza|processo judicial/.test(all)) return 'Fase 4';                       // Litígio
-    if (/carta com ar|aviso de recebimento|notifica\w*\s*fisica|ne fisica|notificacao fisica/.test(all)) return 'Fase 3'; // NE Física/AR
-    if (/ne\s*digital|notifica\w*\s*\w*\s*digital|extrajudicial\s*digital/.test(c)) return 'Fase 2';               // NE Digital (só comentários)
-    return 'Fase 1';                                                                                               // NE Branddi (padrão)
+    var p = deburr(faseNome);      // fase OPEC (sinal AUTORITATIVO — fonte da verdade)
+    var c = deburr(comentarios);   // comentários do card (só p/ física/digital explícitos)
+    // 1) LITÍGIO: SOMENTE quando a FASE do OPEC é "Litígio"/"Quarentena - Litígio".
+    //    NÃO disparar por menção a "advogado" em comentário — nomes de firma (ex.: "Garimpo de Advogados")
+    //    e o próprio texto dos e-mails de NE (citam "escritório de advocacia"/"ajuizamento") davam
+    //    falso-positivo de litígio. A fase OPEC "Notificação Advogado" = NE via advogado, ainda NÃO é litígio.
+    if (/litigio/.test(p)) return 'Fase 4';
+    // 2) NE FÍSICA / AR: carta física / aviso de recebimento (fase OPEC ou comentário explícito).
+    if (/carta com ar|aviso de recebimento|notifica\w*\s*fisica|ne fisica|notificacao fisica/.test(p + '   ' + c)) return 'Fase 3';
+    // 3) NE DIGITAL: o cliente já enviou a NE digital (exige a palavra "digital" nos comentários).
+    if (/ne\s*digital|notifica\w*\s*\w*\s*digital|extrajudicial\s*digital/.test(c)) return 'Fase 2';
+    // 4) PADRÃO: NE Branddi (jornada do time no OPEC — gatilho da triagem do atendimento).
+    return 'Fase 1';
   }
 
   // ── Orquestração: puxa BMS + Pipefy e pré-preenche ──
@@ -3398,18 +3404,22 @@ document.addEventListener('DOMContentLoaded', () => {
       var topLeilao = (pf && pf.card) ? 'inativo' : null;
       if (labLow.some(function (l) { return l.indexOf('top leilão ativo') >= 0 || l.indexOf('top leilao ativo') >= 0; })) topLeilao = 'ativo';
 
-      var termo = null, ranking = null, freq = null, aggr = null, aggrMatched = false, bmsErro = (bms && bms.__err) || null;
+      var termo = null, ranking = null, freq = null, aggr = null, aggrMatched = false, rankPos = null, bmsErro = (bms && bms.__err) || null;
       if (bms && bms.found && Array.isArray(bms.aggressors)) {
         var cn = neagNormKey(ctx.concorrente);
-        var chosen = null;
+        var chosenIdx = -1;
         if (cn) {
-          chosen = bms.aggressors.find(function (a) { var d = neagNormKey(a.domain); return d.indexOf(cn) >= 0 || cn.indexOf(d.replace(/(com|br|www)/g, '')) >= 0; });
+          chosenIdx = bms.aggressors.findIndex(function (a) { var d = neagNormKey(a.domain); return d.indexOf(cn) >= 0 || cn.indexOf(d.replace(/(com|br|www)/g, '')) >= 0; });
         }
-        aggrMatched = !!chosen; // true só quando achou o concorrente de verdade (não o fallback p/ o cliente)
-        if (!chosen) chosen = bms.aggressors[0] || null; // sem match do concorrente: usa o topo da lista p/ pré-preencher (o domínio do e-mail vem do card OPEC, não daqui).
+        aggrMatched = chosenIdx >= 0; // true só quando achou o concorrente de verdade (não o fallback p/ o cliente)
+        var chosen = chosenIdx >= 0 ? bms.aggressors[chosenIdx] : (bms.aggressors[0] || null); // sem match: usa o topo p/ pré-preencher (o domínio do e-mail vem do card OPEC, não daqui).
         if (chosen) {
           termo = chosen.termo;
-          ranking = chosen.bestPosition == null ? null : (chosen.bestPosition <= 5 ? 'top5' : (chosen.bestPosition <= 10 ? 'top10' : 'fora'));
+          // POSIÇÃO NO RANKING = posição do concorrente na lista de agressores do BMS (ordenada por agressividade 14d),
+          // que é o que o BMS mostra (ex.: Mercado Livre = 10º). NÃO é a posição do anúncio (bestPosition).
+          // Só preenche quando o concorrente foi REALMENTE achado (no fallback p/ o topo, deixa em branco p/ o analista).
+          rankPos = chosenIdx >= 0 ? (chosenIdx + 1) : null;
+          ranking = rankPos == null ? null : (rankPos <= 5 ? 'top5' : (rankPos <= 10 ? 'top10' : 'fora'));
           freq = (chosen.occ14d > 0 && chosen.occ7d > 0) ? 'alta' : 'baixa';
           aggr = chosen;
         }
@@ -3417,7 +3427,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       NEAG.card.faseDetectada = fase;
       NEAG.auto = {
-        termo: termo, ranking: ranking, freq: freq,
+        termo: termo, ranking: ranking, freq: freq, rankPos: rankPos,
         posicionamento: recusa ? 'recusa' : 'sem', ciencia: abertura ? 'sim' : 'nao',
         topLeilao: topLeilao, aggressor: aggr, aggrMatched: aggrMatched, opecDomain: opecDomain, bmsFound: !!(bms && bms.found), bmsErro: bmsErro, pipeOk: !!(pf && pf.card),
         inpiAuto: null, inpiTotal: null, inpiVigor: null, inpiErro: null, inpiPendente: true
@@ -3520,7 +3530,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var fase = card.faseDetectada || 'Fase 1';
     var inpiURL = 'https://busca.inpi.gov.br/pePI/jsp/marcas/Pesquisa_classe_basica.jsp';
     var aggR = (NEAG.auto && NEAG.auto.aggressor) ? NEAG.auto.aggressor : null;
-    var posExata = (aggR && aggR.bestPosition != null) ? aggR.bestPosition : null;
+    var rankPos = (NEAG.auto && NEAG.auto.rankPos != null) ? NEAG.auto.rankPos : null;
     document.getElementById('neag-body').innerHTML =
       '<div class="neag-row">' +
         '<span class="neag-badge">' + neagEsc(card.brand || 'Card') + '</span>' +
@@ -3539,7 +3549,7 @@ document.addEventListener('DOMContentLoaded', () => {
       '<div class="neag-form">' +
         neagSel('neag-termo', 'Característica do termo', [['', '— selecionar —'], ['25', 'Puro'], ['15', 'Composto'], ['5', 'Genérico']]) +
         neagSel('neag-seg', 'Relação com o segmento', [['', '— selecionar —'], ['20', 'Sim (mesmo segmento ou relacionado)'], ['0', 'Não (não relacionado / distinto)']]) +
-        neagSel('neag-rank', 'Posição no ranking', [['', '— selecionar —'], ['top5', 'Top 1–5'], ['top10', 'Top 6–10'], ['fora', 'Fora do Top 10']], posExata != null ? ('Posição atual no BMS: ' + posExata + 'ª') : '') +
+        neagSel('neag-rank', 'Posição no ranking', [['', '— selecionar —'], ['top5', 'Top 1–5'], ['top10', 'Top 6–10'], ['fora', 'Fora do Top 10']], rankPos != null ? ('Ranking do concorrente no BMS (14d): ' + rankPos + 'º') : '') +
         neagSel('neag-freq', 'Frequência / recorrência', [['', '— selecionar —'], ['15', 'Alta (ativo em 14d e 7d)'], ['0', 'Baixa / inativo']]) +
         neagSel('neag-pos', 'Posicionamento do concorrente', [['', '— selecionar —'], ['5', 'Sem resposta'], ['15', 'Recusa expressa']]) +
         neagSel('neag-cien', 'Abertura do e-mail (ciência)', [['', '— selecionar —'], ['0', 'Não / sem comprovação'], ['5', 'Sim, comprovada']]) +
@@ -3768,12 +3778,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (ev && ev.count > 0 && ev.csvBase64) anexos.push({ filename: ev.filename || 'Evidencias.csv', contentBase64: ev.csvBase64, mimeType: 'text/csv' });
       } catch (e2) { /* sem evidências — segue sem anexo */ }
     }
-    // 2) Assinatura do analista responsável pela carteira do card.
-    var sigHtml = neagAssinaturaHtml(neagCarteira());
-    // 3) Envia (com planilha anexa + assinatura, se houver).
+    // 2) Assinatura do analista responsável pela carteira do card (+ foto pra embutir inline).
+    var cartSig = neagCarteira();
+    var sigHtml = neagAssinaturaHtml(cartSig);
+    var sigFoto = '';
+    try { var _asg = NEAG_ASSINATURAS[cartSig]; if (_asg && _asg.foto) sigFoto = _asg.foto; } catch (eFt) {}
+    // 3) Envia (com planilha anexa + assinatura + foto inline, se houver).
     setStat(anexos.length ? 'Enviando com planilha de evidências…' : 'Enviando…', '');
     try {
-      var r = await neagCallFn('gmail-send', { to: toArr, cc: ccArr, subject: e.assunto || '', body: e.corpo || '', attachments: anexos, signatureHtml: sigHtml }, 40000);
+      var r = await neagCallFn('gmail-send', { to: toArr, cc: ccArr, subject: e.assunto || '', body: e.corpo || '', attachments: anexos, signatureHtml: sigHtml, inlineImageUrl: sigFoto }, 40000);
       if (r && r.sent) setStat('✅ Enviado para ' + toArr.join(', ') + (anexos.length ? ' (com planilha de evidências)' : ' — sem evidências no BMS p/ esse concorrente'), 'var(--green,#16a34a)');
       else setStat('❌ ' + ((r && r.error) || 'Falha no envio'), 'var(--red,#dc2626)');
     } catch (err) {
