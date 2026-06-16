@@ -3398,13 +3398,14 @@ document.addEventListener('DOMContentLoaded', () => {
       var topLeilao = (pf && pf.card) ? 'inativo' : null;
       if (labLow.some(function (l) { return l.indexOf('top leilão ativo') >= 0 || l.indexOf('top leilao ativo') >= 0; })) topLeilao = 'ativo';
 
-      var termo = null, ranking = null, freq = null, aggr = null, bmsErro = (bms && bms.__err) || null;
+      var termo = null, ranking = null, freq = null, aggr = null, aggrMatched = false, bmsErro = (bms && bms.__err) || null;
       if (bms && bms.found && Array.isArray(bms.aggressors)) {
         var cn = neagNormKey(ctx.concorrente);
         var chosen = null;
         if (cn) {
           chosen = bms.aggressors.find(function (a) { var d = neagNormKey(a.domain); return d.indexOf(cn) >= 0 || cn.indexOf(d.replace(/(com|br|www)/g, '')) >= 0; });
         }
+        aggrMatched = !!chosen; // true só quando achou o concorrente de verdade (não o fallback p/ o cliente)
         if (!chosen) chosen = bms.aggressors[0] || null; // sem match do concorrente: usa o topo da lista p/ pré-preencher (o domínio do e-mail vem do card OPEC, não daqui).
         if (chosen) {
           termo = chosen.termo;
@@ -3418,7 +3419,7 @@ document.addEventListener('DOMContentLoaded', () => {
       NEAG.auto = {
         termo: termo, ranking: ranking, freq: freq,
         posicionamento: recusa ? 'recusa' : 'sem', ciencia: abertura ? 'sim' : 'nao',
-        topLeilao: topLeilao, aggressor: aggr, opecDomain: opecDomain, bmsFound: !!(bms && bms.found), bmsErro: bmsErro, pipeOk: !!(pf && pf.card),
+        topLeilao: topLeilao, aggressor: aggr, aggrMatched: aggrMatched, opecDomain: opecDomain, bmsFound: !!(bms && bms.found), bmsErro: bmsErro, pipeOk: !!(pf && pf.card),
         inpiAuto: null, inpiTotal: null, inpiVigor: null, inpiErro: null, inpiPendente: true
       };
       NEAG.comments = comments;
@@ -3703,6 +3704,41 @@ document.addEventListener('DOMContentLoaded', () => {
     else alert('Cópia não suportada neste navegador.');
   }
 
+  // ── Assinatura por carteira (escolhida automaticamente) ──
+  var NEAG_ASSINATURAS = {
+    'Platinum 1': { nome: 'Karoline Silva', cargo: 'Analista de Customer Success', equipe: 'Equipe Operacional', email: 'karoline.silva@branddi.com' },
+    'Platinum 2': { nome: 'Alícia Cristina Bortolote', cargo: 'Squad Leader', equipe: 'Equipe de Customer Success', email: 'alicia.bortolote@branddi.com' },
+    'Black 1': { nome: 'Talita Nicolau', cargo: 'Customer Success', equipe: 'Equipe de Customer Success', email: 'talita.nicolau@branddi.com' },
+    'Black 2': { nome: 'Julia Camargo', cargo: 'Customer Success Manager', equipe: 'Equipe de Customer Success', email: 'julia.camargo@branddi.com' },
+    'Black 3': { nome: 'Giovanna Araujo', cargo: 'Squad Leader', equipe: 'Equipe de Customer Success', email: 'giovanna.araujo@branddi.com' },
+    'Titanium 1': { nome: 'Julia Roschel', cargo: 'Analista de Customer Success', equipe: 'Equipe de Atendimento', email: 'julia.roschel@branddi.com' },
+    'Titanium 2': { nome: 'Ana Vitória', cargo: 'Analista de Customer Success', equipe: 'Equipe de Customer Success', email: 'vitoria.sena@branddi.com' }
+  };
+  // Descobre a carteira do card (o modal não passa; pega do dado do dashboard em allData).
+  function neagCarteira() {
+    try {
+      var id = (typeof _commentCardId !== 'undefined' && _commentCardId) ? String(_commentCardId) : '';
+      if (!id || typeof allData === 'undefined' || !allData) return '';
+      for (var k in allData) {
+        var arr = allData[k] || [];
+        for (var i = 0; i < arr.length; i++) { if (arr[i] && String(arr[i].id) === id) return arr[i].carteira || ''; }
+      }
+    } catch (e) {}
+    return '';
+  }
+  // Monta a assinatura HTML do analista responsável pela carteira (sem foto/botões por enquanto).
+  function neagAssinaturaHtml(carteira) {
+    var a = NEAG_ASSINATURAS[carteira];
+    if (!a) return '';
+    return '<table cellpadding="0" cellspacing="0" style="margin-top:22px;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif"><tr><td style="padding:0">' +
+      '<div style="font-size:15px;font-weight:bold;color:#149c8e;line-height:1.35">' + neagEsc(a.nome) + '</div>' +
+      '<div style="font-size:13px;color:#333;line-height:1.35">' + neagEsc(a.cargo) + '</div>' +
+      '<div style="font-size:12px;color:#666;margin-top:8px;line-height:1.35">' + neagEsc(a.equipe) + '</div>' +
+      '<div style="font-size:12px;line-height:1.35"><a href="mailto:' + neagEsc(a.email) + '" style="color:#149c8e;text-decoration:none">' + neagEsc(a.email) + '</a></div>' +
+      '<div style="font-size:14px;font-weight:bold;color:#222;margin-top:10px;letter-spacing:.3px">branddi</div>' +
+      '</td></tr></table>';
+  }
+
   // ── Envio do e-mail pelo Gmail (via Edge Function gmail-send) ──
   async function neagEnviarGmail() {
     var e = NEAG.result && NEAG.result.email;
@@ -3717,10 +3753,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!confirm('Enviar este e-mail agora?\n\nPara: ' + toArr.join(', ') + (ccArr.length ? '\nCc: ' + ccArr.join(', ') : '') + '\nAssunto: ' + (e.assunto || ''))) return;
     var stat = document.getElementById('neag-send-stat');
     var setStat = function (txt, color) { if (stat) { stat.textContent = txt; stat.style.color = color || ''; } };
-    setStat('Enviando…', '');
+    // 1) Gera a planilha de evidências do CONCORRENTE (do BMS) p/ anexar. Usa o domínio do concorrente (nunca o do cliente).
+    var anexos = [];
+    var a = NEAG.auto || {};
+    var compDom = a.opecDomain || ((a.aggrMatched && a.aggressor && a.aggressor.domain) ? a.aggressor.domain : '');
+    if (compDom) {
+      setStat('Gerando planilha de evidências…', '');
+      try {
+        var ev = await neagCallFn('evidencias', { brand: (NEAG.card && NEAG.card.brand) || '', domain: compDom, days: 14 }, 30000);
+        if (ev && ev.count > 0 && ev.csvBase64) anexos.push({ filename: ev.filename || 'Evidencias.csv', contentBase64: ev.csvBase64, mimeType: 'text/csv' });
+      } catch (e2) { /* sem evidências — segue sem anexo */ }
+    }
+    // 2) Assinatura do analista responsável pela carteira do card.
+    var sigHtml = neagAssinaturaHtml(neagCarteira());
+    // 3) Envia (com planilha anexa + assinatura, se houver).
+    setStat(anexos.length ? 'Enviando com planilha de evidências…' : 'Enviando…', '');
     try {
-      var r = await neagCallFn('gmail-send', { to: toArr, cc: ccArr, subject: e.assunto || '', body: e.corpo || '' });
-      if (r && r.sent) setStat('✅ Enviado para ' + toArr.join(', '), 'var(--green,#16a34a)');
+      var r = await neagCallFn('gmail-send', { to: toArr, cc: ccArr, subject: e.assunto || '', body: e.corpo || '', attachments: anexos, signatureHtml: sigHtml }, 40000);
+      if (r && r.sent) setStat('✅ Enviado para ' + toArr.join(', ') + (anexos.length ? ' (com planilha de evidências)' : ' — sem evidências no BMS p/ esse concorrente'), 'var(--green,#16a34a)');
       else setStat('❌ ' + ((r && r.error) || 'Falha no envio'), 'var(--red,#dc2626)');
     } catch (err) {
       setStat('❌ ' + ((err && err.message) || String(err)), 'var(--red,#dc2626)');
