@@ -3696,7 +3696,7 @@ document.addEventListener('DOMContentLoaded', () => {
       (email.apendice_usado ? '<div class="neag-hint">Modelo: Apêndice ' + neagEsc(email.apendice_usado) + '</div>' : '') + '</div>' +
       '<div class="neag-form" style="margin-top:10px">' +
         '<div class="neag-grp"><div class="neag-lbl">Enviar para (separe vários por vírgula)</div><input class="neag-input" id="neag-to" type="text" placeholder="cliente1@empresa.com, cliente2@empresa.com"></div>' +
-        '<div class="neag-grp"><div class="neag-lbl">Cc (opcional, separe por vírgula)</div><input class="neag-input" id="neag-cc" type="text" placeholder="copia1@empresa.com, copia2@empresa.com"></div>' +
+        '<div class="neag-grp"><div class="neag-lbl">Cc (opcional, separe por vírgula)</div><input class="neag-input" id="neag-cc" type="text" value="' + neagEsc(neagCcDefault()) + '" placeholder="copia1@empresa.com, copia2@empresa.com"></div>' +
       '</div>' +
       '<div id="neag-send-stat" class="neag-hint" style="margin-top:6px"></div>'
     ) : '';
@@ -3743,6 +3743,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (e) {}
     return '';
+  }
+  // Cc padrão do e-mail = Atendimento + o CS Front da carteira (mesma pessoa que assina, de NEAG_ASSINATURAS).
+  function neagCcDefault() {
+    var emails = ['atendimento@branddi.com'];
+    try { var a = NEAG_ASSINATURAS[neagCarteira()]; if (a && a.email && emails.indexOf(a.email) < 0) emails.push(a.email); } catch (e) {}
+    return emails.join(', ');
   }
   // Monta a assinatura HTML do analista responsável pela carteira (foto em círculo + dados).
   function neagAssinaturaHtml(carteira) {
