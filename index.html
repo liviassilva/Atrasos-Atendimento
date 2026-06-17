@@ -3383,7 +3383,7 @@ document.addEventListener('DOMContentLoaded', () => {
       var pPipe = (opecId && token) ? neagCallFn('pipefy-card', { cardId: opecId, pipefyToken: token }).catch(function () { return null; }) : Promise.resolve(null);
       var pBms = ctx.brand ? neagCallFn('bms-lookup', { brand: ctx.brand }, 20000).catch(function (e) { return { __err: String((e && e.message) || e) }; }) : Promise.resolve(null);
       // INPI roda em paralelo mas NÃO bloqueia a abertura do agente (site do INPI é lento/instável) — preenche depois.
-      var pInpi = ctx.brand ? neagCallFn('inpi-lookup', { brand: ctx.brand }, 45000).catch(function (e) { return { __err: String((e && e.message) || e) }; }) : Promise.resolve(null);
+      var pInpi = ctx.brand ? neagCallFn('inpi-lookup', { brand: ctx.brand }, 60000).catch(function (e) { return { __err: String((e && e.message) || e) }; }) : Promise.resolve(null);
       var res = await Promise.all([pPipe, pBms]);
       var pf = res[0], bms = res[1];
 
@@ -3625,7 +3625,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var aggr = NEAG.auto ? NEAG.auto.aggressor : null;
     var email = apendice ? neagEmail(apendice, {
       topLabel: topLabel, termoPuro: A === 25,
-      posicao: (aggr && aggr.bestPosition != null) ? aggr.bestPosition : null,
+      posicao: (NEAG.auto && NEAG.auto.rankPos != null) ? NEAG.auto.rankPos : null,
       dominio: (NEAG.auto && NEAG.auto.opecDomain) ? NEAG.auto.opecDomain : ((aggr && aggr.domain) ? aggr.domain : null),
       recusa: neagVal('neag-pos') === '15',
       ciencia: neagVal('neag-cien') === '5'
