@@ -1099,8 +1099,10 @@ async function syncPipefy() {
     showSyncBanner('Salvando…', 96);
     if (supabaseClient) {
       await saveCardsToSupabase(allCards);
-      // Recarregar TUDO do Supabase (incluindo cards já concluídos que não voltam do Pipefy)
+      // Recarregar TUDO do Supabase: cards concluídos que não voltam do Pipefy + AS MARCAÇÕES (Sim/analista)
+      // feitas por QUALQUER pessoa hoje (senão o "Sim" dos colegas não aparece aqui ao sincronizar).
       showSyncBanner('Carregando histórico…', 98);
+      await loadSupabaseControls();
       await loadSupabaseCards();
     }
     showSyncBanner('Concluído!', 100);
