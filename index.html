@@ -2483,7 +2483,7 @@ function buildGChatMessage() {
     ['atrasos','negacoes','outros'].forEach(s => {
       const cards = allData[`${s}_${c}`]||[];
       totalCards += cards.length;
-      cards.forEach(r => { if (controlData[c]?.[r.id]?.finalizado==='Sim') totalSim++; });
+      cards.forEach(r => { if (isFinalizadoHoje(controlData[c]?.[r.id])) totalSim++; });
     });
   });
   const pct = totalCards ? Math.round(totalSim/totalCards*100) : 0;
