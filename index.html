@@ -1104,6 +1104,7 @@ async function syncPipefy() {
       showSyncBanner('Carregando histórico…', 98);
       await loadSupabaseControls();
       await loadSupabaseCards();
+      await mergeFinalizadosHoje();
     }
     showSyncBanner('Concluído!', 100);
     setTimeout(hideSyncBanner, 1500);
@@ -1407,9 +1408,12 @@ function sortTable(section, c, field) {
   if (supabaseClient) {
     try {
       showSyncBanner('Limpando cache no Supabase…', 6);
+      // Preservar os cards FINALIZADOS HOJE — senão os concluídos do dia somem de vez (viram órfãos: marcação sem card).
+      const protegidos = new Set();
+      Object.values(controlData).forEach(cart => Object.entries(cart || {}).forEach(([id, ctrl]) => { if (isFinalizadoHoje(ctrl)) protegidos.add(String(id)); }));
       const { data: existing } = await supabaseClient.from('auditoria_cards').select('id');
       if (existing?.length) {
-        const ids = existing.map(r => r.id);
+        const ids = existing.map(r => String(r.id)).filter(id => !protegidos.has(id));
         for (let i = 0; i < ids.length; i += 100) {
           await supabaseClient.from('auditoria_cards').delete().in('id', ids.slice(i, i+100));
         }
@@ -1493,6 +1497,9 @@ function sortTable(section, c, field) {
 }
   let noCarteira = 0, placed = 0;
   cards.forEach(card => {
+    // Solicitação "Cadastro de Marketplace" pertence ao CS Front (aba "Atrasos - CS Front"), mesmo que o card
+    // esteja numa fase de atraso (ex.: Backlog/Pedidos). Reclassifica por solicitação p/ sair de "Tarefas em Atraso".
+    if (card.tipo === 'Atrasos' && /marketplace/i.test(card.solicitacao || '')) card.tipo = 'Cadastro de Marketplace';
     const carteira = card.carteira || 'Sem Carteira';
     const section = TIPOS_CONFIG[card.tipo]?.section || 'outros';
     const key = `${section}_${carteira}`;
@@ -1547,6 +1554,31 @@ async function loadSupabaseControls() {
     if (!controlData[r.carteira]) controlData[r.carteira] = {};
     controlData[r.carteira][r.card_id] = { finalizado: r.finalizado||'Não', analista: r.analista||'', obs: r.obs||'', validacao: r.validacao||'', updated_at: r.updated_at||null };
   });
+}
+
+// Recupera no allData os cards FINALIZADOS HOJE que já saíram do fetch do Pipefy (concluídos no Pipefy),
+// puxando do histórico (auditoria_cards) — pra aparecerem com "Sim" nas abas e contarem no Painel. Reset diário (isFinalizadoHoje).
+async function mergeFinalizadosHoje() {
+  if (!supabaseClient) return;
+  const ids = [];
+  Object.values(controlData).forEach(cart => Object.entries(cart || {}).forEach(([id, ctrl]) => { if (isFinalizadoHoje(ctrl)) ids.push(String(id)); }));
+  if (!ids.length) return;
+  const presentes = new Set();
+  Object.values(allData).forEach(arr => (arr || []).forEach(c => presentes.add(String(c.id))));
+  const faltam = ids.filter(id => !presentes.has(id));
+  if (!faltam.length) return;
+  for (let i = 0; i < faltam.length; i += 100) {
+    try {
+      const { data } = await supabaseClient.from('auditoria_cards').select('*').in('id', faltam.slice(i, i + 100));
+      (data || []).forEach(card => {
+        if (card.tipo === 'Atrasos' && /marketplace/i.test(card.solicitacao || '')) card.tipo = 'Cadastro de Marketplace';
+        const carteira = card.carteira || 'Sem Carteira';
+        const section = TIPOS_CONFIG[card.tipo]?.section || 'outros';
+        const key = `${section}_${carteira}`;
+        if (allData[key] && !allData[key].find(x => String(x.id) === String(card.id))) allData[key].push({ ...card, carteira });
+      });
+    } catch (e) { console.warn('mergeFinalizadosHoje:', e.message); }
+  }
 }
 
 async function saveCardsToSupabase(cards) {
@@ -2143,14 +2175,17 @@ function renderResumo() {
   let atrasoTotal=0, atrasoPendente=0, atrasoConcluido=0;
   const atrasoByCarteira = {};
   CARTEIRAS_ALL.forEach(c => {
-    const cards = getCards('atrasos', c);                 // allData[`atrasos_${c}`] — idêntico ao badge da aba
-    const total = cards.length;
-    const sim   = cards.filter(r => isFinalizadoHoje(controlData[c]?.[r.id])).length;
-    const nao   = total - sim;
-    atrasoByCarteira[c] = { total, sim, nao };
+    const cards = getCards('atrasos', c);                 // pendentes ainda no fetch do Pipefy
+    const pend  = cards.filter(r => !isFinalizadoHoje(controlData[c]?.[r.id])).length;
+    // Concluídos HOJE = TODAS as marcações finalizadas hoje da carteira (mesmo as que já saíram do Pipefy),
+    // mesma base de "Conclusões por Analista". Sem isso, o card concluído some do fetch e a contagem zera.
+    let sim = 0;
+    Object.values(controlData[c] || {}).forEach(ctrl => { if (isFinalizadoHoje(ctrl)) sim++; });
+    const total = pend + sim;
+    atrasoByCarteira[c] = { total, sim, nao: pend };
     atrasoTotal     += total;
     atrasoConcluido += sim;
-    atrasoPendente  += nao;
+    atrasoPendente  += pend;
   });
 
   // CS - Negativações — TOTAL = todos os cards em atraso do dia (MESMA base da aba); Conc. = finalizados HOJE; Pend. = o resto.
