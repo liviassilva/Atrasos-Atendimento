@@ -2155,7 +2155,7 @@ function renderResumo() {
   const filterFrom = document.getElementById('painel-from')?.value || '';
   const filterTo   = document.getElementById('painel-to')?.value   || '';
 
-  const ANALISTAS_PAINEL = ['Aline','Amaore','Keila','Lívia','Railanne','Yasmim'];
+  const ANALISTAS_PAINEL = ['Aline','Amaore','Railanne','Yasmim'];
   const CARTEIRAS_ALL = [...CARTEIRAS];
 
   // ── Compute metrics ──
@@ -2369,7 +2369,7 @@ function renderResumo() {
               'Amaore':   { carteiras: ['Black 1','Black 3'] },
               'Railanne': { carteiras: ['Platinum 2'], negacoes: true },
             };
-            return ANALISTAS_PAINEL.map((a,i) => {
+            return [...ANALISTAS_PAINEL].sort((x,y) => analistaStats[y].total - analistaStats[x].total).map((a,i) => {
               const count = analistaStats[a].total;
               const metaObj = metas[a] || { carteiras: [] };
               const cartResp = metaObj.carteiras || [];
