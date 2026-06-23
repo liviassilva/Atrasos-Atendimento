@@ -2476,45 +2476,35 @@ function buildGChatMessage() {
   const hoje = new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
   const hojeStr = hoje.charAt(0).toUpperCase() + hoje.slice(1);
 
-  // ── Atrasos por carteira ──
-  const atrasoLines = CARTEIRAS
-    .map(c => ({ c, n: (allData[`atrasos_${c}`]||[]).length }))
+  // ATRASADO = venceu ONTEM pra trás (data_vencimento < hoje, Brasília). PARA HOJE = vence hoje OU sem data.
+  const nowBr = new Date(new Date().getTime() - 3 * 60 * 60 * 1000);
+  const todayLocal = new Date(nowBr.getUTCFullYear(), nowBr.getUTCMonth(), nowBr.getUTCDate());
+  const isAtrasado = (r) => {
+    const v = r.data_vencimento;
+    if (!v || v === '—') return false;
+    const p = String(v).split('/');
+    if (p.length !== 3) return false;
+    const due = new Date(Number(p[2]), Number(p[1]) - 1, Number(p[0]));
+    return due < todayLocal;
+  };
+  // Linha por carteira com split inline: "• Black 1: 23 cards (🔴 20 atrasados · 🟢 3 para hoje)"
+  const linhas = (getArr) => CARTEIRAS
+    .map(c => { const cs = getArr(c); const atr = cs.filter(isAtrasado).length; return { c, n: cs.length, atr, hoje: cs.length - atr }; })
     .filter(x => x.n > 0)
-    .map(x => `    • *${x.c}:* ${x.n} cards`)
+    .map(x => `    • *${x.c}:* ${x.n} cards (🔴 ${x.atr} atrasados · 🟢 ${x.hoje} para hoje)`)
     .join('\n');
-  const totalAtrasos = CARTEIRAS.reduce((n,c) => n+(allData[`atrasos_${c}`]||[]).length, 0);
 
-  // ── CS Negativações por carteira ──
-  const negLines = CARTEIRAS
-    .map(c => ({ c, n: (allData[`negacoes_${c}`]||[]).length }))
-    .filter(x => x.n > 0)
-    .map(x => `    • *${x.c}:* ${x.n} cards`)
-    .join('\n');
-  const totalNeg = CARTEIRAS.reduce((n,c) => n+(allData[`negacoes_${c}`]||[]).length, 0);
+  const atrasosArr = (c) => allData[`atrasos_${c}`] || [];
+  const negArr = (c) => allData[`negacoes_${c}`] || [];
+  const allAtr = CARTEIRAS.flatMap(atrasosArr);
+  const allNeg = CARTEIRAS.flatMap(negArr);
+  const atrAtrasados = allAtr.filter(isAtrasado).length, atrHoje = allAtr.length - atrAtrasados;
+  const negAtrasados = allNeg.filter(isAtrasado).length, negHoje = allNeg.length - negAtrasados;
+  const totalNeg = allNeg.length;
+  const totalVenc = CARTEIRAS.reduce((n,c) => n+(allData[`outros_${c}`]||[]).filter(r=>r.tipo==='Vencidos na Fase').length, 0);
+  const totalDesat = CARTEIRAS.reduce((n,c) => n+(allData[`outros_${c}`]||[]).filter(r=>r.tipo==='Desatualizados').length, 0);
+  const totalMkt = CARTEIRAS.reduce((n,c) => n+(allData[`outros_${c}`]||[]).filter(r=>r.tipo==='Cadastro de Marketplace').length, 0);
 
-  // ── Vencidos na Fase por carteira ──
-  const vencLines = CARTEIRAS
-    .map(c => ({ c, n: (allData[`outros_${c}`]||[]).filter(r=>r.tipo==='Vencidos na Fase').length }))
-    .filter(x => x.n > 0)
-    .map(x => `    • *${x.c}:* ${x.n} cards`)
-    .join('\n');
-  const totalVenc = CARTEIRAS.reduce((n,c) =>
-    n+(allData[`outros_${c}`]||[]).filter(r=>r.tipo==='Vencidos na Fase').length, 0);
-
-  // ── Desatualizados por carteira ──
-  const desatLines = CARTEIRAS
-    .map(c => ({ c, n: (allData[`outros_${c}`]||[]).filter(r=>r.tipo==='Desatualizados').length }))
-    .filter(x => x.n > 0)
-    .map(x => `    • *${x.c}:* ${x.n} cards`)
-    .join('\n');
-  const totalDesat = CARTEIRAS.reduce((n,c) =>
-    n+(allData[`outros_${c}`]||[]).filter(r=>r.tipo==='Desatualizados').length, 0);
-
-  // ── Marketplace total ──
-  const totalMkt = CARTEIRAS.reduce((n,c) =>
-    n+(allData[`outros_${c}`]||[]).filter(r=>r.tipo==='Cadastro de Marketplace').length, 0);
-
-  // ── Conclusões globais ──
   let totalCards=0, totalSim=0;
   CARTEIRAS.forEach(c => {
     ['atrasos','negacoes','outros'].forEach(s => {
@@ -2525,23 +2515,21 @@ function buildGChatMessage() {
   });
   const pct = totalCards ? Math.round(totalSim/totalCards*100) : 0;
 
+  const atrasoLines = linhas(atrasosArr);
+  const negLines = linhas(negArr);
+
   const msg = [
     `🗓️ *Auditoria Atendimento — ${hojeStr}*`,
     `📊 _Resumo do dia · ${totalSim}/${totalCards} concluídos (${pct}%)_`,
     '',
-    `🔴 *ATRASOS — ${totalAtrasos} cards*`,
-    atrasoLines || '    _Nenhum atraso hoje_',
+    `🔴 *ATRASADOS* _(venceram até ontem)_ — *${atrAtrasados} cards*`,
+    `🟢 *PARA HOJE* _(vencem hoje ou sem data)_ — *${atrHoje} cards*`,
+    atrasoLines || '    _Nenhum atraso_',
     '',
-    `⚠️ *CS - NEGATIVAÇÕES — ${totalNeg} cards*`,
-    negLines || '    _Nenhuma negativação hoje_',
+    `⚠️ *CS - NEGATIVAÇÕES* — *${totalNeg} cards*  ·  🔴 ${negAtrasados} atrasados  ·  🟢 ${negHoje} para hoje`,
+    negLines || '    _Nenhuma negativação_',
     '',
-    `🟡 *VENCIDOS NA FASE — ${totalVenc} cards*`,
-    vencLines || '    _Nenhum vencido hoje_',
-    '',
-    `⚪ *DESATUALIZADOS — ${totalDesat} cards*`,
-    desatLines || '    _Nenhum desatualizado hoje_',
-    '',
-    `🛒 *CADASTRO DE MARKETPLACE — ${totalMkt} cards*`,
+    `🟡 *VENCIDOS NA FASE* — ${totalVenc}    ⚪ *DESATUALIZADOS* — ${totalDesat}    🛒 *MARKETPLACE* — ${totalMkt}`,
     '',
     `🔗 ${DASHBOARD_LINK}`,
   ].join('\n');
