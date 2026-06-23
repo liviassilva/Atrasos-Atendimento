@@ -2487,12 +2487,15 @@ function buildGChatMessage() {
     const due = new Date(Number(p[2]), Number(p[1]) - 1, Number(p[0]));
     return due < todayLocal;
   };
-  // Linha por carteira com split inline: "• Black 1: 23 cards (🔴 20 atrasados · 🟢 3 para hoje)"
-  const linhas = (getArr) => CARTEIRAS
-    .map(c => { const cs = getArr(c); const atr = cs.filter(isAtrasado).length; return { c, n: cs.length, atr, hoje: cs.length - atr }; })
-    .filter(x => x.n > 0)
-    .map(x => `    • *${x.c}:* ${x.n} cards (🔴 ${x.atr} atrasados · 🟢 ${x.hoje} para hoje)`)
-    .join('\n');
+  // Linhas por carteira em HTML colorido (p/ o card do Google Chat).
+  const RED = '#D93025', GREEN = '#188038', GRAY = '#5F6368';
+  const linhasHtml = (getArr) => {
+    const ls = CARTEIRAS
+      .map(c => { const cs = getArr(c); const atr = cs.filter(isAtrasado).length; return { c, n: cs.length, atr, hoje: cs.length - atr }; })
+      .filter(x => x.n > 0);
+    if (!ls.length) return '<i>Nenhum</i>';
+    return ls.map(x => `<b>${x.c}:</b> ${x.n}  ·  <font color="${RED}">${x.atr} atrasados</font>  ·  <font color="${GREEN}">${x.hoje} hoje</font>`).join('<br>');
+  };
 
   const atrasosArr = (c) => allData[`atrasos_${c}`] || [];
   const negArr = (c) => allData[`negacoes_${c}`] || [];
@@ -2515,26 +2518,26 @@ function buildGChatMessage() {
   });
   const pct = totalCards ? Math.round(totalSim/totalCards*100) : 0;
 
-  const atrasoLines = linhas(atrasosArr);
-  const negLines = linhas(negArr);
-
-  const msg = [
-    `🗓️ *Auditoria Atendimento — ${hojeStr}*`,
-    `📊 _Resumo do dia · ${totalSim}/${totalCards} concluídos (${pct}%)_`,
-    '',
-    `🔴 *ATRASADOS* _(venceram até ontem)_ — *${atrAtrasados} cards*`,
-    `🟢 *PARA HOJE* _(vencem hoje ou sem data)_ — *${atrHoje} cards*`,
-    atrasoLines || '    _Nenhum atraso_',
-    '',
-    `⚠️ *CS - NEGATIVAÇÕES* — *${totalNeg} cards*  ·  🔴 ${negAtrasados} atrasados  ·  🟢 ${negHoje} para hoje`,
-    negLines || '    _Nenhuma negativação_',
-    '',
-    `🟡 *VENCIDOS NA FASE* — ${totalVenc}    ⚪ *DESATUALIZADOS* — ${totalDesat}    🛒 *MARKETPLACE* — ${totalMkt}`,
-    '',
-    `🔗 ${DASHBOARD_LINK}`,
-  ].join('\n');
-
-  return msg;
+  // Card visual do Google Chat (cardsV2) — replica o widget: números coloridos, seções, botão.
+  const card = { cardId: 'resumo', card: {
+    header: { title: 'Auditoria Atendimento', subtitle: `${hojeStr} · ${totalSim}/${totalCards} concluídos (${pct}%)` },
+    sections: [
+      { widgets: [
+        { decoratedText: { topLabel: '🔴 Atrasados — venceram até ontem', text: `<b><font color="${RED}">${atrAtrasados} cards</font></b>` } },
+        { decoratedText: { topLabel: '🟢 Para hoje — vencem hoje ou sem data', text: `<b><font color="${GREEN}">${atrHoje} cards</font></b>` } },
+      ] },
+      { header: 'Atrasos por carteira', widgets: [ { textParagraph: { text: linhasHtml(atrasosArr) } } ] },
+      { header: 'CS - Negativações', widgets: [
+        { textParagraph: { text: `<font color="${RED}">${negAtrasados} atrasados</font>  ·  <font color="${GREEN}">${negHoje} para hoje</font>` } },
+        { textParagraph: { text: linhasHtml(negArr) } },
+      ] },
+      { widgets: [ { textParagraph: { text: `<font color="${GRAY}">Vencidos na fase: <b>${totalVenc}</b>  ·  Desatualizados: <b>${totalDesat}</b>  ·  Marketplace: <b>${totalMkt}</b></font>` } } ] },
+      { widgets: [ { buttonList: { buttons: [ { text: 'Abrir dashboard', onClick: { openLink: { url: DASHBOARD_LINK } } } ] } } ] },
+    ],
+  } };
+  // text = fallback de notificação; cardsV2 = o card visual.
+  const fallback = `Auditoria — ${hojeStr}: 🔴 ${atrAtrasados} atrasados · 🟢 ${atrHoje} para hoje · ✅ ${totalSim}/${totalCards} concluídos`;
+  return { text: fallback, cardsV2: [card] };
 }
 
 async function sendGChatNow() {
@@ -2543,11 +2546,11 @@ async function sendGChatNow() {
   btn.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px" class="spin"><path d="M1 4s1-3 7-3a7 7 0 016.5 4.4"/><path d="M15 12s-1 3-7 3A7 7 0 011.5 10.6"/><polyline points="1,1 1,4 4,4"/><polyline points="15,15 15,12 12,12"/></svg> Enviando…`;
 
   try {
-    const msg = buildGChatMessage();
+    const payload = buildGChatMessage();
     const resp = await fetch(GCHAT_WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: msg }),
+      body: JSON.stringify(payload),
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     btn.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px"><path d="M2 8l4 4 8-8"/></svg> Enviado!`;
