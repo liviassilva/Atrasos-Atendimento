@@ -1110,6 +1110,7 @@ async function syncPipefy() {
     setTimeout(hideSyncBanner, 1500);
     localStorage.setItem('auditoria_last_sync', new Date().toISOString());
     updateLastSync();
+    capturarBaselineDia();   // captura/atualiza o baseline do dia (pico) p/ o resumo — a cada sync
     rebuildAll();
   } catch(e) {
     showSyncBanner('Erro: ' + e.message, 0);
@@ -2483,6 +2484,45 @@ function renderResumo() {
 const GCHAT_WEBHOOK = 'https://chat.googleapis.com/v1/spaces/AAAAHKnwxC8/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=T5Rw6eKhw9aw_rUV8dWbfPmGB3oHNs6LC8ahzYVqy3s';
 const DASHBOARD_LINK = 'https://branddi-auditoria.vercel.app'; // atualizar após deploy Sprint 5
 
+// Universo do dia = PENDENTES agora + CONCLUÍDOS hoje (mesma base do resumo). Conta cada card uma vez (Set de ids).
+function universoDoDia() {
+  let pend = 0, conc = 0; const seen = new Set();
+  CARTEIRAS.forEach(c => {
+    ['atrasos','negacoes','outros'].forEach(s => {
+      (allData[`${s}_${c}`]||[]).forEach(r => {
+        const id = String(r.id); if (seen.has(id)) return; seen.add(id);
+        if (isFinalizadoHoje(controlData[c]?.[r.id])) conc++; else pend++;
+      });
+    });
+  });
+  Object.keys(controlData).forEach(c => {
+    Object.entries(controlData[c]||{}).forEach(([id, ctrl]) => {
+      if (isFinalizadoHoje(ctrl) && !seen.has(String(id))) { seen.add(String(id)); conc++; }
+    });
+  });
+  return { pend, conc };
+}
+// Chave de dia em horário Brasília (UTC-3).
+function diaKeyBr() {
+  const n = new Date(new Date().getTime() - 3*60*60*1000);
+  return `${n.getUTCFullYear()}-${String(n.getUTCMonth()+1).padStart(2,'0')}-${String(n.getUTCDate()).padStart(2,'0')}`;
+}
+// BASELINE DO DIA = "o total que tinha pra fazer hoje" (ex.: 403 de manhã). Guardado no navegador como o PICO do
+// universo visto no dia (de manhã, quando quase nada foi concluído). Zera a cada dia. "Limpar cache" NÃO apaga.
+// Assim o total do resumo NÃO encolhe e "concluídos = baseline − pendentes". Retorna o baseline (número) ou null.
+function capturarBaselineDia() {
+  try {
+    const { pend, conc } = universoDoDia();
+    const universo = pend + conc;
+    const dia = diaKeyBr();
+    const st = JSON.parse(localStorage.getItem('baselineResumoDia') || 'null');
+    let total = universo;
+    if (st && st.dia === dia && typeof st.total === 'number') total = Math.max(st.total, universo);
+    localStorage.setItem('baselineResumoDia', JSON.stringify({ dia, total }));
+    return total;
+  } catch(e) { return null; }
+}
+
 function buildGChatMessage() {
   const hoje = new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
   const hojeStr = hoje.charAt(0).toUpperCase() + hoje.slice(1);
@@ -2500,6 +2540,8 @@ function buildGChatMessage() {
   };
   // Linhas por carteira em HTML colorido (p/ o card do Google Chat).
   const RED = '#D93025', GREEN = '#188038', GRAY = '#5F6368';
+  // PENDENTE = card ainda em aberto (NÃO finalizado hoje). É o "número atual" por carteira (ex.: Platinum 1 = 11, não 17).
+  const pendArr = (s, c) => (allData[`${s}_${c}`]||[]).filter(r => !isFinalizadoHoje(controlData[c]?.[r.id]));
   const linhasHtml = (getArr) => {
     const ls = CARTEIRAS
       .map(c => { const cs = getArr(c); const atr = cs.filter(isAtrasado).length; return { c, n: cs.length, atr, hoje: cs.length - atr }; })
@@ -2508,65 +2550,48 @@ function buildGChatMessage() {
     return ls.map(x => `<b>${x.c}:</b> ${x.n}  ·  <font color="${RED}">${x.atr} atrasados</font>  ·  <font color="${GREEN}">${x.hoje} hoje</font>`).join('<br>');
   };
 
-  const atrasosArr = (c) => allData[`atrasos_${c}`] || [];
-  const negArr = (c) => allData[`negacoes_${c}`] || [];
+  // Detalhamento por carteira = só PENDENTES (exclui os já concluídos hoje).
+  const atrasosArr = (c) => pendArr('atrasos', c);
+  const negArr = (c) => pendArr('negacoes', c);
   const allAtr = CARTEIRAS.flatMap(atrasosArr);
   const allNeg = CARTEIRAS.flatMap(negArr);
   const atrAtrasados = allAtr.filter(isAtrasado).length, atrHoje = allAtr.length - atrAtrasados;
   const negAtrasados = allNeg.filter(isAtrasado).length, negHoje = allNeg.length - negAtrasados;
-  const totalNeg = allNeg.length;
-  const totalVenc = CARTEIRAS.reduce((n,c) => n+(allData[`outros_${c}`]||[]).filter(r=>r.tipo==='Vencidos na Fase').length, 0);
-  const totalDesat = CARTEIRAS.reduce((n,c) => n+(allData[`outros_${c}`]||[]).filter(r=>r.tipo==='Desatualizados').length, 0);
-  const totalMkt = CARTEIRAS.reduce((n,c) => n+(allData[`outros_${c}`]||[]).filter(r=>r.tipo==='Cadastro de Marketplace').length, 0);
+  const totalVenc  = CARTEIRAS.reduce((n,c) => n + pendArr('outros',c).filter(r=>r.tipo==='Vencidos na Fase').length, 0);
+  const totalDesat = CARTEIRAS.reduce((n,c) => n + pendArr('outros',c).filter(r=>r.tipo==='Desatualizados').length, 0);
+  const totalMkt   = CARTEIRAS.reduce((n,c) => n + pendArr('outros',c).filter(r=>r.tipo==='Cadastro de Marketplace').length, 0);
 
-  // TOTAL = universo do dia: (cards ainda na busca ao vivo) + (TODOS os concluídos HOJE, mesmo os que já
-  // saíram do Pipefy). Sem a 2ª parte, concluir uma tarefa fazia o card sumir e o total ENCOLHER (403→347).
-  // Mesma base do Painel/"Conclusões por Analista" (2188-2202): depende só do controlData (sempre carregado).
-  let totalCards=0, totalSim=0;
-  const idsContados = new Set();
-  // 1) Cards ainda presentes no fetch do Pipefy (pendentes + concluídos que ainda não saíram da busca)
-  CARTEIRAS.forEach(c => {
-    ['atrasos','negacoes','outros'].forEach(s => {
-      (allData[`${s}_${c}`]||[]).forEach(r => {
-        const id = String(r.id);
-        if (idsContados.has(id)) return;
-        idsContados.add(id);
-        totalCards++;
-        if (isFinalizadoHoje(controlData[c]?.[r.id])) totalSim++;
-      });
-    });
-  });
-  // 2) Concluídos HOJE que já saíram da busca (qualquer carteira do controlData) — re-somados ao total
-  Object.keys(controlData).forEach(c => {
-    Object.entries(controlData[c]||{}).forEach(([id, ctrl]) => {
-      if (isFinalizadoHoje(ctrl) && !idsContados.has(String(id))) {
-        idsContados.add(String(id));
-        totalCards++;
-        totalSim++;
-      }
-    });
-  });
-  const pct = totalCards ? Math.round(totalSim/totalCards*100) : 0;
+  // ===== TOTAIS DO DIA ===== (universoDoDia + baseline do dia — ver helpers logo acima de buildGChatMessage)
+  // Obs.: hoje (1º dia da correção) o baseline parte do estado atual; a partir de amanhã captura o pico da manhã.
+  const { pend: pendentesAgora, conc: concluidosHoje } = universoDoDia();
+  const baselineDia = capturarBaselineDia();
+  const totalDia = (baselineDia != null) ? baselineDia : (pendentesAgora + concluidosHoje);
+  const concluidos = Math.max(0, totalDia - pendentesAgora);   // o que foi feito (inclui fechados direto no Pipefy)
+  const pct = totalDia ? Math.round(concluidos/totalDia*100) : 0;
 
   // Card visual do Google Chat (cardsV2) — replica o widget: números coloridos, seções, botão.
   const card = { cardId: 'resumo', card: {
-    header: { title: 'Auditoria Atendimento', subtitle: `${hojeStr} · ${totalSim}/${totalCards} concluídos (${pct}%)` },
+    header: { title: 'Auditoria Atendimento', subtitle: `${hojeStr} · ${concluidos}/${totalDia} concluídos (${pct}%)` },
     sections: [
       { widgets: [
-        { decoratedText: { topLabel: '🔴 Atrasados — venceram até ontem', text: `<b><font color="${RED}">${atrAtrasados} cards</font></b>` } },
-        { decoratedText: { topLabel: '🟢 Para hoje — vencem hoje ou sem data', text: `<b><font color="${GREEN}">${atrHoje} cards</font></b>` } },
+        { decoratedText: { topLabel: '📋 Total do dia (era pra concluir)', text: `<b>${totalDia} casos</b>` } },
+        { decoratedText: { topLabel: '✅ Concluídos', text: `<b><font color="${GREEN}">${concluidos} casos</font></b>` } },
+        { decoratedText: { topLabel: '⏳ Pendentes agora', text: `<b><font color="${RED}">${pendentesAgora} casos</font></b>` } },
       ] },
-      { header: 'Atrasos por carteira', widgets: [ { textParagraph: { text: linhasHtml(atrasosArr) } } ] },
-      { header: 'CS - Negativações', widgets: [
+      { header: 'Pendentes — Atrasos por carteira', widgets: [
+        { textParagraph: { text: `<font color="${RED}">${atrAtrasados} atrasados (venceram até ontem)</font>  ·  <font color="${GREEN}">${atrHoje} para hoje</font>` } },
+        { textParagraph: { text: linhasHtml(atrasosArr) } },
+      ] },
+      { header: 'Pendentes — CS - Negativações', widgets: [
         { textParagraph: { text: `<font color="${RED}">${negAtrasados} atrasados</font>  ·  <font color="${GREEN}">${negHoje} para hoje</font>` } },
         { textParagraph: { text: linhasHtml(negArr) } },
       ] },
-      { widgets: [ { textParagraph: { text: `<font color="${GRAY}">Vencidos na fase: <b>${totalVenc}</b>  ·  Desatualizados: <b>${totalDesat}</b>  ·  Marketplace: <b>${totalMkt}</b></font>` } } ] },
+      { widgets: [ { textParagraph: { text: `<font color="${GRAY}">Pendentes — Vencidos na fase: <b>${totalVenc}</b>  ·  Desatualizados: <b>${totalDesat}</b>  ·  Marketplace: <b>${totalMkt}</b></font>` } } ] },
       { widgets: [ { buttonList: { buttons: [ { text: 'Abrir dashboard', onClick: { openLink: { url: DASHBOARD_LINK } } } ] } } ] },
     ],
   } };
   // text = fallback de notificação; cardsV2 = o card visual.
-  const fallback = `Auditoria — ${hojeStr}: 🔴 ${atrAtrasados} atrasados · 🟢 ${atrHoje} para hoje · ✅ ${totalSim}/${totalCards} concluídos`;
+  const fallback = `Auditoria — ${hojeStr}: ✅ ${concluidos}/${totalDia} concluídos · ⏳ ${pendentesAgora} pendentes (🔴 ${atrAtrasados} atrasados · 🟢 ${atrHoje} hoje)`;
   return { text: fallback, cardsV2: [card] };
 }
 
