@@ -77,6 +77,11 @@
   [data-theme="light"] .modal, [data-theme="light"] .modal-backdrop > div, [data-theme="light"] .card,
   [data-theme="light"] .metric-card, [data-theme="light"] .table-wrap, [data-theme="light"] .audit-panel,
   [data-theme="light"] .settings-panel { box-shadow: 0 4px 16px rgba(0,0,0,.08) !important; }
+  /* Barras que tinham fundo ESCURO fixo (cabeçalho, rodapé, filtros, tabela) — clareadas no tema claro */
+  [data-theme="light"] .app-header   { background: linear-gradient(180deg, rgba(255,255,255,.88) 0%, rgba(255,255,255,.72) 100%); }
+  [data-theme="light"] .footer-status{ background: linear-gradient(180deg, rgba(255,255,255,.92) 0%, rgba(245,247,250,.96) 100%); }
+  [data-theme="light"] .filters-bar  { background: linear-gradient(180deg, #FFFFFF 0%, #EEF1F6 100%); }
+  [data-theme="light"] .table-wrap   { background: linear-gradient(180deg, #FFFFFF 0%, #F5F7FA 100%); }
 
   * { box-sizing: border-box; }
   html, body {
