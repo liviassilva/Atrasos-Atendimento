@@ -1,0 +1,4634 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Painel de Violação de Marca — Branddi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-0: #07090f;
+    --bg-1: #0f1320;
+    --bg-2: #161b2c;
+    --bg-3: #1d2538;
+    --bg-hover: #232c44;
+    --border: #2a334d;
+    --border-soft: #1e2538;
+    --text-0: #f0f3fa;
+    --text-1: #c8cfde;
+    --text-2: #8a93a7;
+    --text-3: #5a6378;
+    --accent: #5b8cff;
+    --accent-2: #7ea5ff;
+    --green: #0f5132;
+    --green-bg: #0e3a24;
+    --green-text: #5ee39b;
+    --orange: #7a3e0e;
+    --orange-bg: #4a2509;
+    --orange-text: #ffa85c;
+    --blue: #1e3a8a;
+    --blue-bg: #1a2c5c;
+    --blue-text: #8fb3ff;
+    --amber: #6a4a0b;
+    --amber-bg: #3f2d08;
+    --amber-text: #ffd479;
+    --purple: #4c1d95;
+    --purple-bg: #2a1558;
+    --purple-text: #c4a7ff;
+    --teal: #0f4f4a;
+    --teal-bg: #0a3935;
+    --teal-text: #5ee3d9;
+    --red: #7f1d1d;
+    --red-bg: #3f1111;
+    --red-text: #ff8080;
+    --shadow-1: 0 1px 2px rgba(0,0,0,.4);
+    --shadow-2: 0 8px 24px rgba(0,0,0,.5);
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg-0);
+    color: var(--text-0);
+    font-family: 'Inter', -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.45;
+    font-feature-settings: 'cv02','cv03','cv04','cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    min-height: 100vh;
+    /* Gradient radial sutil no topo da página + textura ambient */
+    background:
+      radial-gradient(ellipse 1200px 600px at 50% -200px, rgba(91,140,255,.08) 0%, transparent 60%),
+      radial-gradient(ellipse 800px 400px at 100% 0, rgba(159,107,255,.06) 0%, transparent 60%),
+      var(--bg-0);
+    background-attachment: fixed;
+  }
+  button, input, select, textarea { font-family: inherit; color: inherit; }
+  .mono, code, kbd { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, monospace; }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--bg-3);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--bg-hover); background-clip: padding-box; }
+  * { scrollbar-width: thin; scrollbar-color: var(--bg-3) transparent; }
+
+  /* Header — glassmorphism com gradiente sutil */
+  .app-header {
+    background: linear-gradient(180deg, rgba(15,19,32,.85) 0%, rgba(15,19,32,.75) 100%);
+    border-bottom: 1px solid var(--border-soft);
+    padding: 14px 28px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+  .app-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(91,140,255,.4) 30%, rgba(159,107,255,.4) 70%, transparent 100%);
+    opacity: .8;
+  }
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-mark {
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #5b8cff 0%, #9f6bff 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: white; font-size: 15px;
+    box-shadow:
+      0 4px 14px rgba(91,140,255,.4),
+      inset 0 1px 0 rgba(255,255,255,.2);
+    position: relative;
+  }
+  .brand-mark::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9px;
+    background: linear-gradient(180deg, rgba(255,255,255,.15) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .brand h1 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -.2px;
+    color: var(--text-0);
+    background: linear-gradient(135deg, var(--text-0) 0%, var(--text-1) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Botão circular de ícone (auditoria, settings) */
+  .icon-btn {
+    background: transparent;
+    border: 1px solid var(--border-soft);
+    color: var(--text-1);
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    font-size: 15px;
+    cursor: pointer;
+    position: relative;
+    transition: all .15s;
+  }
+  .icon-btn:hover {
+    background: var(--bg-2);
+    border-color: var(--border);
+    color: var(--text-0);
+  }
+
+  /* Token input — escondido por padrão, mostrado quando .visible */
+  .token-input.hidden-token {
+    position: absolute;
+    top: 60px;
+    right: 24px;
+    width: 320px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 11.5px;
+    font-family: ui-monospace, Consolas, monospace;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    z-index: 20;
+    display: none;
+  }
+  .token-input.hidden-token.visible {
+    display: block;
+  }
+
+  .header-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .token-input {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    width: 280px;
+    font-size: 12px;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .token-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(91,140,255,.15);
+  }
+  .btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: .2px;
+  }
+  .btn:hover { background: var(--accent-2); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(91,140,255,.4); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+  .btn-ghost {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    color: var(--text-1);
+  }
+  .btn-ghost:hover { background: var(--bg-3); box-shadow: none; }
+  .btn-primary-strong {
+    background: linear-gradient(135deg, #5b8cff 0%, #9f6bff 100%);
+    padding: 9px 18px;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: -.1px;
+    box-shadow:
+      0 4px 14px rgba(91,140,255,.35),
+      inset 0 1px 0 rgba(255,255,255,.15);
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-primary-strong::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255,255,255,.12) 0%, transparent 100%);
+    pointer-events: none;
+  }
+  .btn-primary-strong:hover {
+    background: linear-gradient(135deg, #6b97ff 0%, #ad7eff 100%);
+    box-shadow:
+      0 8px 24px rgba(91,140,255,.5),
+      0 0 0 3px rgba(91,140,255,.2),
+      inset 0 1px 0 rgba(255,255,255,.2);
+    transform: translateY(-1px);
+  }
+  .btn-primary-strong:active {
+    transform: translateY(0);
+    box-shadow:
+      0 2px 8px rgba(91,140,255,.4),
+      inset 0 1px 0 rgba(255,255,255,.1);
+  }
+  .btn-icon {
+    display: inline-block;
+    font-size: 14px;
+    transition: transform .4s ease;
+  }
+  .btn-primary-strong:active .btn-icon,
+  .btn-primary-strong.spinning .btn-icon {
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* User chip — versão compacta */
+  .user-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    padding: 3px 12px 3px 3px;
+    cursor: pointer;
+    transition: all .15s;
+    color: inherit;
+    height: 34px;
+  }
+  .user-chip:hover { background: var(--bg-2); border-color: var(--border); }
+  .user-avatar {
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    width: 26px; height: 26px;
+    background: linear-gradient(135deg, #5b8cff 0%, #9f6bff 100%);
+    color: white;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+  }
+  .user-avatar.anon { background: var(--bg-3); color: var(--text-2); }
+  .user-name-only {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-0);
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Audit badge — flutuante no canto do botão */
+  .audit-badge {
+    position: absolute;
+    top: -4px; right: -4px;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    min-width: 16px; height: 16px;
+    padding: 0 4px;
+    background: var(--accent);
+    color: white;
+    border-radius: 8px;
+    font-size: 9.5px;
+    font-weight: 700;
+    box-shadow: 0 0 0 2px var(--bg-1);
+  }
+
+  /* Audit table */
+  .audit-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--bg-2);
+    flex-wrap: wrap;
+  }
+  .audit-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .audit-table thead th {
+    position: sticky;
+    top: 0;
+    background: var(--bg-2);
+    color: var(--text-2);
+    text-transform: uppercase;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .8px;
+    padding: 9px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    z-index: 2;
+  }
+  .audit-table tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-soft);
+    vertical-align: middle;
+    color: var(--text-1);
+  }
+  .audit-table tbody tr:hover td { background: rgba(91,140,255,.05); }
+  .audit-user-cell { display: flex; align-items: center; gap: 8px; }
+  .audit-user-cell .avatar-mini {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px;
+    background: linear-gradient(135deg, #5b8cff, #9f6bff);
+    border-radius: 5px; font-weight: 700; font-size: 10px; color: white;
+    text-transform: uppercase;
+  }
+  .audit-status-ok { color: var(--green-text); font-weight: 600; }
+  .audit-status-err { color: var(--red-text); font-weight: 600; }
+  .audit-action-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .4px;
+    text-transform: uppercase;
+  }
+  .audit-action-move { background: rgba(91,140,255,.15); color: var(--accent-2); }
+  .audit-action-email { background: rgba(159,107,255,.15); color: #c4a7ff; }
+  .audit-action-cobranca { background: rgba(255,212,121,.15); color: var(--amber-text); }
+  .audit-action-encerramento { background: rgba(94,227,155,.15); color: var(--green-text); }
+
+  /* Ícone de histórico por linha */
+  .row-history-icon {
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: rgba(91,140,255,.15);
+    color: var(--accent-2);
+    font-size: 9.5px;
+    font-weight: 700;
+    cursor: help;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+
+  .refresh-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-2);
+    font-size: 11.5px;
+    padding: 0 4px;
+  }
+  #countdownText { color: var(--text-3); font-size: 10.5px; }
+  .pulse-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 0 rgba(34,197,94,.5);
+    animation: pulse 1.8s infinite;
+  }
+  .pulse-dot.loading { background: #f59e0b; animation: pulse-load 1s infinite; }
+  .pulse-dot.error { background: #ef4444; animation: none; }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(34,197,94,.5); }
+    70% { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+    100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+  }
+  @keyframes pulse-load {
+    0%,100% { opacity: 1; }
+    50% { opacity: .3; }
+  }
+
+  /* Main */
+  .main {
+    padding: 28px 28px 70px;
+    max-width: 1820px;
+    margin: 0 auto;
+  }
+
+  /* Metrics cards — premium with depth & color hint */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .metric-card {
+    background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 20px 22px;
+    transition: all .25s cubic-bezier(.4,0,.2,1);
+    position: relative;
+    overflow: hidden;
+  }
+  .metric-card:hover {
+    border-color: var(--border);
+    transform: translateY(-2px);
+    box-shadow:
+      0 12px 24px rgba(0,0,0,.3),
+      0 0 0 1px var(--border);
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 200px 100px at 0% 0%, rgba(91,140,255,.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .metric-card.green { background: linear-gradient(180deg, rgba(94,227,155,.04) 0%, var(--bg-1) 100%); }
+  .metric-card.green::before { background: radial-gradient(ellipse 200px 100px at 0% 0%, rgba(94,227,155,.08) 0%, transparent 70%); }
+  .metric-card.orange { background: linear-gradient(180deg, rgba(255,168,92,.04) 0%, var(--bg-1) 100%); }
+  .metric-card.orange::before { background: radial-gradient(ellipse 200px 100px at 0% 0%, rgba(255,168,92,.08) 0%, transparent 70%); }
+
+  .metric-label {
+    color: var(--text-2);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
+  }
+  .metric-value {
+    font-size: 36px;
+    font-weight: 800;
+    margin-top: 12px;
+    letter-spacing: -1px;
+    color: var(--text-0);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(135deg, var(--text-0) 0%, var(--text-1) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .metric-hint {
+    color: var(--text-3);
+    font-size: 11px;
+    margin-top: 8px;
+    position: relative;
+    z-index: 1;
+  }
+  .metric-card.green .metric-value {
+    background: linear-gradient(135deg, #5ee39b 0%, #3dc77a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .metric-card.orange .metric-value {
+    background: linear-gradient(135deg, #ffa85c 0%, #ff8a3a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Mini progress bar dentro de NF cards */
+  .metric-progress {
+    height: 4px;
+    background: rgba(255,255,255,.06);
+    border-radius: 2px;
+    margin-top: 10px;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+  }
+  .metric-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width .6s cubic-bezier(.4,0,.2,1);
+  }
+  .metric-card.green .metric-progress-fill { background: linear-gradient(90deg, #3dc77a 0%, #5ee39b 100%); box-shadow: 0 0 8px rgba(94,227,155,.5); }
+  .metric-card.orange .metric-progress-fill { background: linear-gradient(90deg, #ff8a3a 0%, #ffa85c 100%); box-shadow: 0 0 8px rgba(255,168,92,.5); }
+
+  /* Barra horizontal proporcional para Distribuição por Fase */
+  .phases-bar {
+    display: flex;
+    height: 6px;
+    margin-top: 12px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: rgba(255,255,255,.04);
+    position: relative;
+    z-index: 1;
+  }
+  .phases-segment {
+    height: 100%;
+    transition: width .6s cubic-bezier(.4,0,.2,1);
+  }
+  .phase-backlog-bg { background: linear-gradient(90deg, var(--blue-text), #6b95ff); }
+  .phase-standby-bg { background: linear-gradient(90deg, var(--amber-text), #ffe095); }
+  .phase-doing-bg   { background: linear-gradient(90deg, var(--purple-text), #d4b9ff); }
+  .phase-enviado-bg { background: linear-gradient(90deg, var(--teal-text), #80f0e8); }
+
+  /* Card de Distribuição por Fase */
+  .phases-card .phase-list {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    position: relative;
+    z-index: 1;
+  }
+  .phase-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-1);
+    transition: color .15s;
+  }
+  .phase-item:hover { color: var(--text-0); }
+  .phase-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px currentColor;
+  }
+  .phase-backlog-dot { background: var(--blue-text); color: var(--blue-text); }
+  .phase-standby-dot { background: var(--amber-text); color: var(--amber-text); }
+  .phase-doing-dot   { background: var(--purple-text); color: var(--purple-text); }
+  .phase-enviado-dot { background: var(--teal-text); color: var(--teal-text); }
+  .phase-name { flex: 1; color: var(--text-2); }
+  .phase-count {
+    font-weight: 700;
+    color: var(--text-0);
+    font-variant-numeric: tabular-nums;
+    font-size: 13.5px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  /* Filters — refined chips */
+  .filters-bar {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    padding: 14px 18px;
+    background: linear-gradient(180deg, var(--bg-1) 0%, rgba(15,19,32,0.6) 100%);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+  }
+  .filter-group { display: flex; gap: 5px; align-items: center; }
+  .filter-label {
+    color: var(--text-3);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-right: 6px;
+  }
+  .filter-chip {
+    background: rgba(255,255,255,.02);
+    border: 1px solid var(--border-soft);
+    color: var(--text-2);
+    padding: 6px 12px;
+    border-radius: 7px;
+    font-size: 11.5px;
+    cursor: pointer;
+    transition: all .15s cubic-bezier(.4,0,.2,1);
+    user-select: none;
+    font-weight: 500;
+  }
+  .filter-chip:hover {
+    background: var(--bg-2);
+    color: var(--text-0);
+    border-color: var(--border);
+    transform: translateY(-1px);
+  }
+  .filter-chip.active {
+    background: linear-gradient(135deg, rgba(91,140,255,.15) 0%, rgba(159,107,255,.12) 100%);
+    border-color: rgba(91,140,255,.5);
+    color: var(--accent-2);
+    box-shadow:
+      0 2px 8px rgba(91,140,255,.15),
+      inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .search-input {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 12px 7px 32px;
+    width: 260px;
+    font-size: 12px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a93a7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 10px center;
+  }
+  .search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(91,140,255,.15);
+  }
+  .filter-spacer { flex: 1; }
+  .counter-badge {
+    color: var(--text-2);
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .counter-badge strong { color: var(--text-0); }
+
+  /* Progress bar */
+  .load-progress {
+    margin: 10px 0;
+    background: var(--bg-1);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    display: none;
+  }
+  .load-progress.visible { display: block; }
+  .load-progress-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 11.5px;
+    color: var(--text-2);
+  }
+  .load-progress-bar {
+    height: 5px;
+    background: var(--bg-3);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .load-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    width: 0%;
+    transition: width .25s ease;
+  }
+
+  /* Table — premium dark with subtle depth */
+  .table-wrap {
+    background: linear-gradient(180deg, var(--bg-1) 0%, rgba(15,19,32,0.95) 100%);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow:
+      0 4px 12px rgba(0,0,0,.2),
+      0 1px 3px rgba(0,0,0,.1),
+      inset 0 1px 0 rgba(255,255,255,.02);
+  }
+  .table-scroll {
+    overflow-x: auto;
+    max-height: calc(100vh - 380px);
+    overflow-y: auto;
+  }
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    min-width: 1500px;
+  }
+  .data-table thead th {
+    position: sticky;
+    top: 0;
+    background: linear-gradient(180deg, var(--bg-2) 0%, rgba(22,28,42,0.92) 100%);
+    backdrop-filter: blur(10px);
+    color: var(--text-2);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-size: 10px;
+    padding: 14px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    z-index: 2;
+    user-select: none;
+    transition: color .15s;
+  }
+  .data-table thead th:hover { color: var(--text-1); }
+  .data-table thead th::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(91,140,255,.4) 50%, transparent 100%);
+    opacity: .6;
+  }
+  .data-table thead th:not(:first-child)::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 30%; bottom: 30%;
+    width: 1px;
+    background: var(--border-soft);
+  }
+
+  .th-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    color: var(--accent-2);
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 4px;
+    background: rgba(91,140,255,.1);
+    vertical-align: middle;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: none;
+    transition: all .15s;
+  }
+  .data-table thead th:hover .th-icon {
+    background: rgba(91,140,255,.2);
+    color: var(--accent-2);
+  }
+  .th-label {
+    vertical-align: middle;
+  }
+  .data-table tbody tr {
+    border-bottom: 1px solid rgba(30,37,56,.5);
+    transition: background .15s;
+    animation: fadeIn .35s ease both;
+  }
+  .data-table tbody tr:nth-child(even):not(.group-middle):not(.group-last) {
+    background: rgba(255,255,255,.008);
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .data-table tbody tr:hover {
+    background: var(--bg-2);
+  }
+  .data-table td {
+    padding: 12px 14px;
+    vertical-align: middle;
+    color: var(--text-1);
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .data-table td.product-title { max-width: 340px; }
+  .data-table td a {
+    color: var(--accent-2);
+    text-decoration: none;
+    transition: color .15s;
+  }
+  .data-table td a:hover { color: var(--accent); text-decoration: underline; }
+
+  /* Group visual for multi-product cards */
+  tr.group-first td:first-child {
+    border-left: 3px solid var(--accent);
+    position: relative;
+  }
+  tr.group-first td:first-child::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 1px;
+    background: rgba(91, 140, 255, .2);
+  }
+  tr.group-middle td, tr.group-last td {
+    background: rgba(91, 140, 255, 0.045);
+  }
+  tr.group-middle:hover td, tr.group-last:hover td {
+    background: rgba(91, 140, 255, 0.1);
+  }
+  tr.group-middle td:first-child, tr.group-last td:first-child {
+    border-left: 3px solid rgba(91, 140, 255, 0.45);
+    padding-left: 26px;
+    position: relative;
+  }
+  tr.group-middle td:first-child::before, tr.group-last td:first-child::before {
+    content: '↳';
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(91, 140, 255, .55);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  tr.group-last td {
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .4px;
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .badge.with-nf {
+    background: linear-gradient(135deg, rgba(94,227,155,.15) 0%, rgba(61,199,122,.1) 100%);
+    color: var(--green-text);
+    border: 1px solid rgba(94,227,155,.3);
+    box-shadow: inset 0 1px 0 rgba(94,227,155,.1);
+  }
+  .badge.with-nf .badge-dot {
+    background: var(--green-text);
+    box-shadow: 0 0 6px rgba(94,227,155,.6);
+  }
+  .badge.no-nf {
+    background: linear-gradient(135deg, rgba(255,168,92,.15) 0%, rgba(255,138,58,.1) 100%);
+    color: var(--orange-text);
+    border: 1px solid rgba(255,168,92,.3);
+    box-shadow: inset 0 1px 0 rgba(255,168,92,.1);
+  }
+  .badge.no-nf .badge-dot {
+    background: var(--orange-text);
+    box-shadow: 0 0 6px rgba(255,168,92,.6);
+  }
+
+  .phase-badge {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 4px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .4px;
+    text-transform: uppercase;
+  }
+  .phase-backlog { background: var(--blue-bg); color: var(--blue-text); }
+  .phase-standby { background: var(--amber-bg); color: var(--amber-text); }
+  .phase-doing { background: var(--purple-bg); color: var(--purple-text); }
+  .phase-enviado { background: var(--teal-bg); color: var(--teal-text); }
+  .phase-concluido { background: var(--green-bg); color: var(--green-text); }
+
+  /* Move button — único botão com destaque visual */
+  .btn-move {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: white;
+    padding: 5px 12px;
+    height: 28px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: .2px;
+    cursor: pointer;
+    transition: all .12s;
+    white-space: nowrap;
+  }
+  .btn-move:hover {
+    background: var(--accent-2);
+    border-color: var(--accent-2);
+  }
+  .btn-move.active {
+    background: var(--accent-2);
+    border-color: var(--accent-2);
+  }
+  .btn-move .caret {
+    font-size: 10px;
+    opacity: .75;
+  }
+  .btn-move.loading { pointer-events: none; opacity: .7; }
+  .btn-move.loading .caret { animation: spin 1s linear infinite; }
+
+  /* Kebab button — botão de "mais ações" */
+  .kebab-btn {
+    background: transparent;
+    border: 1px solid var(--border-soft);
+    color: var(--text-2);
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .12s;
+    padding: 0;
+  }
+  .kebab-btn:hover {
+    background: var(--bg-2);
+    border-color: var(--border);
+    color: var(--text-0);
+  }
+  .kebab-btn.active {
+    background: var(--bg-3);
+    border-color: var(--accent);
+    color: var(--accent-2);
+  }
+  .kebab-dots {
+    font-size: 16px;
+    line-height: 1;
+    letter-spacing: -1px;
+    transform: translateY(-3px);
+    font-weight: 700;
+  }
+
+  /* Actions popover (kebab menu) — reutiliza estilo do move popover */
+  .actions-popover {
+    position: fixed;
+    top: 0; left: 0;
+    min-width: 220px;
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 14px 40px rgba(0,0,0,.6);
+    z-index: 120;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 4px;
+  }
+  .actions-popover.visible { display: flex; animation: popoverIn .15s ease both; }
+  .actions-popover-item {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    cursor: pointer;
+    color: var(--text-1);
+    font-size: 12.5px;
+    transition: all .1s;
+    text-decoration: none;
+    width: 100%;
+  }
+  .actions-popover-item:hover {
+    background: var(--bg-2);
+    color: var(--text-0);
+  }
+  .actions-popover-item:disabled,
+  .actions-popover-item.disabled {
+    opacity: .4;
+    cursor: not-allowed;
+    color: var(--text-3);
+  }
+  .actions-popover-item:disabled:hover,
+  .actions-popover-item.disabled:hover {
+    background: transparent;
+    color: var(--text-3);
+  }
+  .actions-popover-icon {
+    width: 22px;
+    text-align: center;
+    font-size: 13px;
+  }
+  .actions-popover-divider {
+    height: 1px;
+    background: var(--border-soft);
+    margin: 4px 0;
+  }
+  .actions-popover-meta {
+    margin-left: auto;
+    font-size: 10.5px;
+    color: var(--text-3);
+    background: var(--bg-3);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  /* Move popover */
+  .move-popover {
+    position: fixed;
+    top: 0; left: 0;
+    min-width: 280px;
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 14px 40px rgba(0,0,0,.6);
+    z-index: 120;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    animation: popoverIn .15s ease both;
+  }
+  .move-popover.visible { display: flex; }
+  @keyframes popoverIn {
+    from { opacity: 0; transform: translateY(-4px) scale(.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .move-popover-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--bg-2);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    color: var(--text-2);
+  }
+  .move-popover-close {
+    background: transparent; border: none; color: var(--text-2);
+    font-size: 18px; cursor: pointer; line-height: 1;
+    width: 22px; height: 22px; border-radius: 4px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .move-popover-close:hover { background: var(--bg-3); color: var(--text-0); }
+  .move-popover-body { display: flex; flex-direction: column; padding: 4px; gap: 2px; }
+  .move-option {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    cursor: pointer;
+    transition: all .12s;
+  }
+  .move-option:hover {
+    background: var(--bg-2);
+    border-color: var(--border);
+  }
+  .move-option:active { transform: scale(.99); }
+  .move-option .phase-badge { min-width: 78px; text-align: center; }
+  .move-option-hint {
+    color: var(--text-3);
+    font-size: 10.5px;
+    letter-spacing: .3px;
+    flex: 1;
+  }
+  .move-popover-loading {
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 18px;
+    color: var(--text-1);
+    font-size: 12px;
+  }
+  .move-spinner {
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+
+  /* Info & warn boxes para os novos modais */
+  .info-box {
+    background: var(--bg-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--text-1);
+  }
+  .warn-box {
+    background: rgba(255,212,121,.08);
+    border: 1px solid rgba(255,212,121,.25);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--amber-text);
+    line-height: 1.6;
+  }
+  .radio-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all .12s;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--text-1);
+  }
+  .radio-row:hover { border-color: var(--accent); background: var(--bg-3); }
+  .radio-row input[type="radio"] {
+    margin-top: 3px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+  }
+  .radio-row input[type="radio"]:checked + span { color: var(--text-0); }
+  .radio-row:has(input:checked) { border-color: var(--accent); background: rgba(91,140,255,.08); }
+
+  .reason-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+    margin-right: 4px;
+  }
+  .reason-retirar { background: var(--green-bg); color: var(--green-text); }
+  .reason-manter { background: var(--blue-bg); color: var(--blue-text); }
+  .reason-semretorno { background: var(--bg-3); color: var(--text-2); }
+
+  /* Botão de cobrança — sutil, mesma família dos demais */
+  .action-btn.cobranca {
+    color: var(--amber-text);
+    border-color: rgba(255,212,121,.25);
+  }
+  .action-btn.cobranca:hover {
+    background: rgba(255,212,121,.12);
+    color: var(--amber-text);
+    border-color: rgba(255,212,121,.5);
+  }
+
+  /* Linha destacada durante a movimentação */
+  tr.row-moving td { opacity: .55; background: rgba(91,140,255,.06) !important; transition: opacity .2s; }
+  tr.row-moved-out td { animation: rowFadeOut .4s ease both; }
+  @keyframes rowFadeOut {
+    to { opacity: 0; transform: translateX(40px); background: rgba(94,227,155,.1) !important; }
+  }
+
+  .type-violation-badge, .platform-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+    border-radius: 3px;
+    white-space: nowrap;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    cursor: help;
+  }
+  .type-violation-badge { background: rgba(159,107,255,.18); color: #d4bfff; border: 1px solid rgba(159,107,255,.35); }
+  .platform-badge { background: var(--bg-3); color: var(--text-2); border: 1px solid var(--border); }
+  .type-violation-badge:hover, .platform-badge:hover { max-width: none; }
+
+  /* Cliente - ênfase tipográfica */
+  .client-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .client-name {
+    font-weight: 600;
+    color: var(--text-0);
+    font-size: 12.5px;
+    letter-spacing: -.1px;
+  }
+
+  /* Chip de tipo de caso (Violação de Marca | Comercial) */
+  .case-type-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    height: 18px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: .6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    cursor: help;
+  }
+  .case-type-marca {
+    background: rgba(91,140,255,.15);
+    color: var(--accent-2);
+    border: 1px solid rgba(91,140,255,.35);
+  }
+  .case-type-comercial {
+    background: rgba(255,168,92,.15);
+    color: var(--orange-text);
+    border: 1px solid rgba(255,168,92,.35);
+  }
+  .client-source {
+    font-size: 9.5px;
+    color: var(--text-3);
+    margin-top: 3px;
+    letter-spacing: .4px;
+    text-transform: uppercase;
+  }
+  .muted-dup {
+    color: var(--text-3);
+    font-size: 11.5px;
+  }
+
+  /* Agressor — link-like para URLs */
+  .agressor-link {
+    font-weight: 500;
+    color: var(--text-0);
+    font-size: 12.5px;
+  }
+
+  /* Empty cells — mais elegante */
+  .cell-empty { color: var(--text-3); opacity: .5; font-style: normal; }
+
+  /* Action buttons — mais discretos, uniformes */
+  .actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .action-btn {
+    background: transparent;
+    border: 1px solid var(--border-soft);
+    color: var(--text-2);
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    transition: all .12s;
+    position: relative;
+    text-decoration: none;
+  }
+  .action-btn:hover {
+    background: var(--bg-2);
+    border-color: var(--border);
+    color: var(--text-0);
+  }
+  .action-btn[data-count] {
+    border-color: var(--border);
+    color: var(--accent-2);
+  }
+  .action-btn[data-count]::after {
+    content: attr(data-count);
+    position: absolute;
+    top: -5px; right: -5px;
+    background: var(--accent);
+    color: white;
+    font-size: 9px;
+    min-width: 15px; height: 15px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 3px;
+    font-weight: 700;
+  }
+
+  .tooltip { position: relative; }
+  .tooltip::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 6px); left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-3);
+    color: var(--text-0);
+    padding: 5px 9px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s;
+    z-index: 20;
+    border: 1px solid var(--border);
+  }
+  .tooltip:hover::before { opacity: 1; }
+
+  .empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text-2);
+  }
+  .empty-state .icon { font-size: 48px; opacity: .5; margin-bottom: 12px; }
+  .empty-state h3 { margin: 0 0 6px; color: var(--text-1); font-weight: 600; }
+  .empty-state p { margin: 0; font-size: 12.5px; }
+
+  .warning-icon { color: var(--orange-text); cursor: help; }
+
+  /* Skeleton */
+  .skeleton-row td { padding: 14px 12px; }
+  .skeleton-bar {
+    height: 12px;
+    background: linear-gradient(90deg, var(--bg-2) 0%, var(--bg-3) 50%, var(--bg-2) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 4px;
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(5, 8, 15, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn .2s ease both;
+  }
+  .modal-backdrop.visible { display: flex; }
+  .modal {
+    background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 780px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+      0 40px 100px rgba(0,0,0,.7),
+      0 8px 32px rgba(0,0,0,.4),
+      inset 0 1px 0 rgba(255,255,255,.04);
+    animation: modalIn .3s cubic-bezier(.2,.8,.2,1) both;
+    overflow: hidden;
+    position: relative;
+  }
+  .modal::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(91,140,255,.4), rgba(159,107,255,.3), transparent);
+    opacity: .8;
+  }
+  @keyframes modalIn {
+    from { transform: translateY(18px) scale(.98); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+  }
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-soft);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-header h3 { margin: 0; font-size: 15px; font-weight: 600; }
+  .modal-body {
+    padding: 18px 20px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .modal-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border-soft);
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-2);
+    font-size: 20px;
+    cursor: pointer;
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .modal-close:hover { background: var(--bg-3); color: var(--text-0); }
+  .form-group { margin-bottom: 14px; }
+  .form-group label {
+    display: block;
+    color: var(--text-2);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .form-group input, .form-group textarea {
+    width: 100%;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12.5px;
+    color: var(--text-0);
+    font-family: inherit;
+    resize: vertical;
+  }
+  .form-group input:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(91,140,255,.15);
+  }
+  .form-group textarea { min-height: 320px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; line-height: 1.6; }
+  .copy-feedback {
+    position: fixed;
+    bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(30px);
+    background: var(--green-text);
+    color: var(--bg-0);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 12.5px;
+    opacity: 0;
+    transition: all .25s;
+    z-index: 200;
+    pointer-events: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  }
+  .copy-feedback.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Attachments popover list */
+  .attach-list {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .attach-item {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px;
+    font-size: 12px;
+  }
+  .attach-item a { color: var(--accent-2); text-decoration: none; }
+  .attach-item a:hover { text-decoration: underline; }
+
+  /* Footer status */
+  .footer-status {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(180deg, rgba(15,19,32,.85) 0%, rgba(7,9,15,.95) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-soft);
+    padding: 7px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10.5px;
+    color: var(--text-3);
+    gap: 16px;
+    z-index: 5;
+    letter-spacing: .2px;
+  }
+  .footer-status strong { color: var(--text-1); font-weight: 600; }
+  .footer-status .dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--text-3);
+    display: inline-block;
+    margin: 0 8px;
+    opacity: .5;
+  }
+
+  .cell-muted { color: var(--text-3); }
+  .cell-warn { color: var(--orange-text); }
+  .cell-link { max-width: 160px; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle; }
+
+  /* Links unificados na tabela (ícones compactos) */
+  .links-group { display: inline-flex; gap: 4px; }
+  .link-icon {
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-soft);
+    color: var(--text-1);
+    font-size: 13px;
+    text-decoration: none;
+    transition: all .12s;
+  }
+  .link-icon:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .link-icon.disabled {
+    opacity: .25;
+    cursor: not-allowed;
+    pointer-events: auto; /* mantém o tooltip */
+  }
+  .link-icon.disabled:hover {
+    background: var(--bg-2);
+    border-color: var(--border-soft);
+    color: var(--text-1);
+  }
+
+  @media (max-width: 900px) {
+    .token-input { width: 200px; }
+    .search-input { width: 180px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-row">
+    <div class="brand">
+      <div class="brand-mark">B</div>
+      <h1>Painel de Violação de Marca</h1>
+    </div>
+    <div class="header-controls">
+      <div class="refresh-status">
+        <span id="pulseDot" class="pulse-dot"></span>
+        <span id="refreshText">Aguardando…</span>
+        <span id="countdownText"></span>
+      </div>
+      <button id="loadBtn" class="btn btn-primary-strong tooltip" data-tooltip="Atualizar dados agora">
+        <span class="btn-icon">⟳</span>
+        <span>Atualizar</span>
+      </button>
+      <button id="auditBtn" class="icon-btn tooltip" data-tooltip="Logs de auditoria">
+        <span>📋</span>
+        <span class="audit-badge" id="auditBadge" style="display:none">0</span>
+      </button>
+      <button id="userChip" class="user-chip tooltip" data-tooltip="Ajustar nome de exibição">
+        <span class="user-avatar" id="userAvatar">?</span>
+        <span class="user-name-only" id="userName">—</span>
+      </button>
+      <button id="settingsBtn" class="icon-btn tooltip" data-tooltip="Configurações (token)">⚙</button>
+      <input type="password" id="tokenInput" class="token-input hidden-token" placeholder="Bearer token do Pipefy" autocomplete="off" />
+    </div>
+  </div>
+</header>
+
+<main class="main">
+
+  <section class="metrics" id="metrics">
+    <div class="metric-card">
+      <div class="metric-label">Total de Casos</div>
+      <div class="metric-value" id="m-total">—</div>
+      <div class="metric-hint" id="m-total-hint">Aguardando dados</div>
+    </div>
+    <div class="metric-card green">
+      <div class="metric-label">Com Nota Fiscal</div>
+      <div class="metric-value" id="m-nf">—</div>
+      <div class="metric-progress"><div class="metric-progress-fill" id="m-nf-bar" style="width:0%"></div></div>
+      <div class="metric-hint" id="m-nf-hint">0% do total</div>
+    </div>
+    <div class="metric-card orange">
+      <div class="metric-label">Sem Nota Fiscal</div>
+      <div class="metric-value" id="m-no-nf">—</div>
+      <div class="metric-progress"><div class="metric-progress-fill" id="m-no-nf-bar" style="width:0%"></div></div>
+      <div class="metric-hint" id="m-no-nf-hint">0% do total</div>
+    </div>
+    <div class="metric-card phases-card">
+      <div class="metric-label">Distribuição por Fase</div>
+      <div class="phases-bar">
+        <div class="phases-segment phase-backlog-bg" id="m-bar-backlog" style="width:0%"></div>
+        <div class="phases-segment phase-standby-bg" id="m-bar-standby" style="width:0%"></div>
+        <div class="phases-segment phase-doing-bg"   id="m-bar-doing"   style="width:0%"></div>
+        <div class="phases-segment phase-enviado-bg" id="m-bar-enviado" style="width:0%"></div>
+      </div>
+      <div class="phase-list">
+        <div class="phase-item"><span class="phase-dot phase-backlog-dot"></span><span class="phase-name">Backlog</span><span class="phase-count" id="m-backlog">—</span></div>
+        <div class="phase-item"><span class="phase-dot phase-standby-dot"></span><span class="phase-name">StandBy</span><span class="phase-count" id="m-standby">—</span></div>
+        <div class="phase-item"><span class="phase-dot phase-doing-dot"></span><span class="phase-name">Doing</span><span class="phase-count" id="m-doing">—</span></div>
+        <div class="phase-item"><span class="phase-dot phase-enviado-dot"></span><span class="phase-name">Enviado</span><span class="phase-count" id="m-enviado">—</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="load-progress" id="loadProgress">
+    <div class="load-progress-label">
+      <span id="progressText">Carregando dados…</span>
+      <span id="progressCount">0 / 0</span>
+    </div>
+    <div class="load-progress-bar">
+      <div class="load-progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+
+  <div class="filters-bar">
+    <div class="filter-group">
+      <span class="filter-label">Fase:</span>
+      <button class="filter-chip active" data-filter-phase="all">Todas</button>
+      <button class="filter-chip" data-filter-phase="backlog">Backlog</button>
+      <button class="filter-chip" data-filter-phase="standby">StandBy</button>
+      <button class="filter-chip" data-filter-phase="doing">Doing</button>
+      <button class="filter-chip" data-filter-phase="enviado">Enviado</button>
+    </div>
+    <div class="filter-group" style="margin-left:8px">
+      <span class="filter-label">NF:</span>
+      <button class="filter-chip active" data-filter-nf="all">Todas</button>
+      <button class="filter-chip" data-filter-nf="with">Com NF</button>
+      <button class="filter-chip" data-filter-nf="without">Sem NF</button>
+    </div>
+    <input type="text" id="searchInput" class="search-input" placeholder="Buscar por cliente, agressor, produto…" />
+    <div class="filter-spacer"></div>
+    <div class="counter-badge"><strong id="visibleCount">0</strong> de <strong id="totalCount">0</strong> linhas</div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="min-width:180px"><span class="th-icon">◉</span><span class="th-label">Cliente</span></th>
+            <th style="min-width:220px"><span class="th-icon">⊕</span><span class="th-label">Seller / Agressor</span></th>
+            <th style="min-width:130px"><span class="th-icon">#</span><span class="th-label">ID</span></th>
+            <th style="min-width:260px"><span class="th-icon">▤</span><span class="th-label">Produto</span></th>
+            <th style="min-width:90px"><span class="th-icon">↗</span><span class="th-label">Links</span></th>
+            <th style="min-width:130px"><span class="th-icon">◐</span><span class="th-label">Fase</span></th>
+            <th style="min-width:90px"><span class="th-icon">✓</span><span class="th-label">NF</span></th>
+            <th style="min-width:100px"><span class="th-icon">◰</span><span class="th-label">Anexos</span></th>
+            <th style="min-width:170px"><span class="th-icon">▸</span><span class="th-label">Ações</span></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="9" class="empty-state">
+            <div class="icon">🔐</div>
+            <h3>Painel seguro — sem token embutido</h3>
+            <p>Cole seu token pessoal do Pipefy no campo acima e clique em "Atualizar agora" para começar.</p>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- Email Modal -->
+<div class="modal-backdrop" id="emailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📧 E-mail de Retorno — Denúncia Mercado Livre</h3>
+      <button class="modal-close" id="modalClose">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="emailSubject">Assunto</label>
+        <input type="text" id="emailSubject" />
+      </div>
+      <div class="form-group">
+        <label for="emailBody">Corpo do e-mail</label>
+        <textarea id="emailBody"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="copySubjectBtn">Copiar assunto</button>
+      <button class="btn btn-ghost" id="copyBodyBtn">Copiar corpo</button>
+      <button class="btn" id="copyAllBtn">Copiar tudo</button>
+      <button class="btn btn-ghost" id="modalCloseBtn">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Actions Popover (kebab menu — secondary actions) -->
+<div id="popoverAcoes" class="actions-popover" role="menu" aria-hidden="true">
+  <a class="actions-popover-item" id="apItemOpen" href="#" target="_blank" rel="noopener">
+    <span class="actions-popover-icon">↗</span>
+    <span>Abrir card no Pipefy</span>
+  </a>
+  <button class="actions-popover-item" id="apItemEmail">
+    <span class="actions-popover-icon">📧</span>
+    <span>Gerar e-mail</span>
+    <span class="actions-popover-meta" id="apEmailCount"></span>
+  </button>
+  <button class="actions-popover-item" id="apItemCobranca">
+    <span class="actions-popover-icon">🔔</span>
+    <span>Registrar cobrança</span>
+    <span class="actions-popover-meta" id="apCobrancaMeta">Enviado</span>
+  </button>
+  <div class="actions-popover-divider"></div>
+  <button class="actions-popover-item" id="apItemAttach">
+    <span class="actions-popover-icon">📎</span>
+    <span>Ver anexos</span>
+    <span class="actions-popover-meta" id="apAttachCount"></span>
+  </button>
+</div>
+
+<!-- Move Popover (dropdown compacto ativado pelo botão Mover) -->
+<div id="popoverMover" class="move-popover" role="menu" aria-hidden="true">
+  <div class="move-popover-header">
+    <span>Mover card para…</span>
+    <button class="move-popover-close" id="movePopoverClose" aria-label="Fechar">×</button>
+  </div>
+  <div class="move-popover-body">
+    <button class="move-option" data-phase-id="316705020" data-phase-slug="standby" data-phase-label="StandBy">
+      <span class="phase-badge phase-standby">StandBy</span>
+      <span class="move-option-hint">Pausar tratativa</span>
+    </button>
+    <button class="move-option" data-phase-id="319202807" data-phase-slug="enviado" data-phase-label="Enviado para Cliente/Solicitante" data-with-comment="1">
+      <span class="phase-badge phase-enviado">Enviado</span>
+      <span class="move-option-hint">+ comentário "E-mail enviado em…"</span>
+    </button>
+    <button class="move-option" data-phase-id="316891459" data-phase-slug="concluido" data-phase-label="Concluídos Geral">
+      <span class="phase-badge phase-concluido">Concluído</span>
+      <span class="move-option-hint">Encerra o caso</span>
+    </button>
+  </div>
+  <div class="move-popover-loading" id="movePopoverLoading" style="display:none">
+    <div class="move-spinner"></div>
+    <span id="movePopoverLoadingText">Movendo…</span>
+  </div>
+</div>
+
+<!-- Attachments Modal -->
+<div class="modal-backdrop" id="attachModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3>📎 Anexos do card</h3>
+      <button class="modal-close" id="attachModalClose">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="attach-list" id="attachList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="attachCloseBtn">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Password Unlock Modal (quando há token compartilhado criptografado) -->
+<div class="modal-backdrop" id="unlockModal">
+  <div class="modal" style="max-width: 460px">
+    <div class="modal-header" style="background: linear-gradient(135deg, rgba(91,140,255,.1), rgba(159,107,255,.1));">
+      <h3>🔐 Acesso ao Painel</h3>
+    </div>
+    <div class="modal-body">
+      <p style="color: var(--text-1); font-size: 13px; margin-top: 0">
+        Este painel é protegido por senha. Digite a senha de acesso fornecida pelo administrador para desbloquear.
+      </p>
+      <div class="form-group" style="margin-top: 18px">
+        <label for="unlockPasswordInput">Senha de acesso</label>
+        <input type="password" id="unlockPasswordInput" placeholder="Digite a senha…" autocomplete="current-password"/>
+      </div>
+      <div id="unlockError" style="display:none;margin-top:10px;padding:10px 14px;background:rgba(255,128,128,.08);border:1px solid rgba(255,128,128,.2);border-radius:8px;font-size:12px;color:var(--red-text)"></div>
+      <div style="margin-top: 14px; padding: 10px 14px; background: rgba(94,227,155,.05); border: 1px solid rgba(94,227,155,.15); border-radius: 8px; font-size: 11px; color: var(--text-2);">
+        🔒 A senha é verificada localmente no navegador. Após o desbloqueio, o token descriptografado fica salvo neste dispositivo para os próximos acessos.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary-strong" id="unlockSubmitBtn" style="width: 100%; justify-content: center; padding: 10px">
+        <span>🔓</span>
+        <span>Desbloquear painel</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Onboarding Modal (fallback — usado apenas se CONFIG.ENCRYPTED_TOKEN estiver vazio) -->
+<div class="modal-backdrop" id="onboardingModal">
+  <div class="modal" style="max-width: 540px">
+    <div class="modal-header" style="background: linear-gradient(135deg, rgba(91,140,255,.1), rgba(159,107,255,.1));">
+      <h3>👋 Bem-vindo ao Painel de Violação de Marca</h3>
+    </div>
+    <div class="modal-body">
+      <p style="color: var(--text-1); font-size: 13px; margin-top: 0">
+        Cole seu <strong>token pessoal da API do Pipefy</strong> abaixo — ele fica salvo só neste dispositivo.
+      </p>
+      <div class="form-group" style="margin-top: 18px">
+        <label for="onboardingTokenInput">Token pessoal Pipefy</label>
+        <input type="password" id="onboardingTokenInput" placeholder="eyJhbGciOi..." autocomplete="off" style="font-family: ui-monospace, Consolas, monospace; font-size: 11.5px"/>
+      </div>
+      <details style="margin-top: 14px; background: var(--bg-2); border: 1px solid var(--border-soft); border-radius: 8px; padding: 10px 14px">
+        <summary style="cursor: pointer; color: var(--accent-2); font-weight: 600; font-size: 12px">Como gerar meu token?</summary>
+        <ol style="margin: 10px 0 0; padding-left: 20px; color: var(--text-1); font-size: 12px; line-height: 1.7">
+          <li>Acesse <a href="https://app.pipefy.com/" target="_blank" rel="noopener" style="color: var(--accent-2)">app.pipefy.com</a></li>
+          <li>Avatar → Configurações pessoais → Tokens de API</li>
+          <li>Gerar novo token → copiar</li>
+        </ol>
+      </details>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary-strong" id="onboardingSaveBtn" style="width: 100%; justify-content: center; padding: 10px">
+        <span>🚀</span>
+        <span>Salvar e carregar painel</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Cobrança Manual Modal -->
+<div class="modal-backdrop" id="modalCobranca">
+  <div class="modal" style="max-width: 580px">
+    <div class="modal-header">
+      <h3>🔔 Registrar Cobrança Manual</h3>
+      <button class="modal-close" id="cobrancaModalClose">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box">
+        <div><strong>Cliente:</strong> <span id="cobrancaClient">—</span></div>
+        <div style="margin-top:4px"><strong>Cards que receberão o comentário:</strong> <span id="cobrancaCardCount">—</span></div>
+      </div>
+      <div class="form-group" style="margin-top:14px">
+        <label>Texto que será postado em cada card</label>
+        <textarea id="cobrancaPreview" rows="5" readonly></textarea>
+      </div>
+      <div class="warn-box" style="margin-top: 12px">
+        ⏰ Vencimento será atualizado para <strong id="cobrancaNewDueDate">—</strong> (3 dias úteis a partir de hoje)
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="cobrancaCancelBtn">Cancelar</button>
+      <button class="btn btn-primary-strong" id="cobrancaConfirmBtn">
+        <span>🔔</span><span>Confirmar e postar cobrança</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Encerramento Modal -->
+<div class="modal-backdrop" id="modalEncerramento">
+  <div class="modal" style="max-width: 640px">
+    <div class="modal-header">
+      <h3>🏁 Concluir caso de Violação</h3>
+      <button class="modal-close" id="closeModalClose">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box">
+        <div><strong>Cliente:</strong> <span id="closeClient">—</span></div>
+        <div style="margin-top:4px"><strong>Agressor desta linha:</strong> <span id="closeAggressor">—</span></div>
+        <div style="margin-top:4px"><strong>Total de violações vinculadas:</strong> <span id="closeViolationCount">—</span></div>
+      </div>
+
+      <div class="form-group" style="margin-top:16px">
+        <label>1. Escopo do encerramento</label>
+        <label class="radio-row">
+          <input type="radio" name="closeScope" value="all" checked>
+          <span><strong>Encerrar caso inteiro</strong> — move o Atendimento para Concluídos Geral e posta em <em>todas</em> as violações vinculadas</span>
+        </label>
+        <label class="radio-row">
+          <input type="radio" name="closeScope" value="single">
+          <span><strong>Encerrar apenas esta violação</strong> — não move o Atendimento; posta apenas nesta violação + no Atendimento</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label>2. Motivo</label>
+        <label class="radio-row">
+          <input type="radio" name="closeReason" value="retirar" checked>
+          <span><span class="reason-badge reason-retirar">🟢 Retirar denúncia</span> — Cliente solicitou retirada</span>
+        </label>
+        <label class="radio-row">
+          <input type="radio" name="closeReason" value="manter">
+          <span><span class="reason-badge reason-manter">🔵 Manter denúncia</span> — Cliente solicitou manutenção</span>
+        </label>
+        <label class="radio-row">
+          <input type="radio" name="closeReason" value="semretorno">
+          <span><span class="reason-badge reason-semretorno">⚪ Sem retorno</span> — Sem retorno do cliente em 3 dias</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label>Preview do comentário</label>
+        <textarea id="closePreview" rows="6" readonly></textarea>
+      </div>
+
+      <div class="info-box" id="closeSummary" style="margin-top:8px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="closeCancelBtn">Cancelar</button>
+      <button class="btn btn-primary-strong" id="closeConfirmBtn">
+        <span>🏁</span><span>Confirmar e encerrar</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Audit Log Modal -->
+<div class="modal-backdrop" id="auditModal">
+  <div class="modal" style="max-width: 1000px; max-height: 90vh">
+    <div class="modal-header">
+      <h3>📋 Logs de Auditoria</h3>
+      <button class="modal-close" id="auditModalClose">×</button>
+    </div>
+    <div class="audit-toolbar">
+      <input type="text" id="auditSearch" class="search-input" placeholder="Buscar usuário, card, ação…" style="width: 300px"/>
+      <div class="filter-group">
+        <span class="filter-label">Ação:</span>
+        <button class="filter-chip active" data-audit-action="all">Todas</button>
+        <button class="filter-chip" data-audit-action="move">Movimentação</button>
+        <button class="filter-chip" data-audit-action="email-copy">E-mail</button>
+        <button class="filter-chip" data-audit-action="cobranca">Cobrança</button>
+        <button class="filter-chip" data-audit-action="encerramento">Encerramento</button>
+      </div>
+      <div class="filter-spacer"></div>
+      <button class="btn btn-ghost" id="auditExportBtn">⬇ CSV</button>
+      <button class="btn btn-ghost" id="auditClearBtn" style="color: var(--red-text); border-color: rgba(255,128,128,.3)">Limpar</button>
+    </div>
+    <div class="modal-body" style="padding: 0">
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Usuário</th>
+            <th>Ação</th>
+            <th>Card</th>
+            <th>De → Para</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="auditTableBody"></tbody>
+      </table>
+    </div>
+    <div class="modal-footer" style="justify-content: space-between">
+      <span style="color: var(--text-2); font-size: 11.5px">
+        Total: <strong id="auditTotalCount">0</strong> registros ·
+        Armazenado localmente neste navegador
+      </span>
+      <button class="btn btn-ghost" id="auditCloseBtn">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- User name override prompt -->
+<div class="modal-backdrop" id="userModal">
+  <div class="modal" style="max-width: 440px">
+    <div class="modal-header">
+      <h3>👤 Nome de exibição</h3>
+      <button class="modal-close" id="userModalClose">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="color: var(--text-2); margin-top: 0; font-size: 12.5px">
+        Seu e-mail foi detectado automaticamente pelo token. Você pode personalizar o nome que aparece nos logs de auditoria e nos comentários do Pipefy.
+      </p>
+      <div class="form-group">
+        <label>E-mail detectado</label>
+        <input type="text" id="userModalEmail" disabled style="opacity:.7"/>
+      </div>
+      <div class="form-group">
+        <label>Nome de exibição</label>
+        <input type="text" id="userModalName" placeholder="Ex: Duda Nicolau"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="userResetBtn">Resetar</button>
+      <button class="btn" id="userSaveBtn">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="copy-feedback" id="copyFeedback">Copiado!</div>
+
+<footer class="footer-status">
+  <div>
+    <strong id="footerCount">0</strong> cards carregados
+    <span class="dot"></span>
+    <strong id="footerRows">0</strong> linhas na tabela
+  </div>
+  <div>
+    Última atualização: <strong id="footerUpdate">—</strong>
+    <span class="dot"></span>
+    Próximo reload em <strong id="footerCountdown">—</strong>
+  </div>
+  <div>Branddi · API Pipefy v2</div>
+</footer>
+
+<script>
+/* ============================================================================
+   PAINEL DE VIOLAÇÃO DE MARCA — Branddi
+   Integração direta com Pipefy GraphQL API
+   ============================================================================ */
+
+const CONFIG = {
+  API_URL: 'https://api.pipefy.com/graphql',
+  PIPE_ID: '302656757',
+
+  // Token compartilhado criptografado (AES-CBC 256 + HMAC-SHA256 · PBKDF2 200k iter · formato v2).
+  // Para rotacionar: abra token-encrypt.html, cole o novo token e defina uma senha → substitua esta string.
+  // Deixe '' (vazio) se quiser voltar ao modo "cada operador cola seu próprio token".
+  ENCRYPTED_TOKEN: 'v2:/sIQzuKe3YakfatVyggoyQ9WkiQEmjc534xl0jbtcHbshIfTpnXeARepawRScqorhqk0U7aNqLomg6fyOaKNq5Pjng7IsvjDIeXd/wNDdfZu8jYSmd3n1WZdeQtOd/j/Hc2QeWxJ9Gd1JzS4sZEaDBVoW2O+SziYFPgfvxwgN8ybvdHpFj2HOEyy2YTvn9rL24BtBfQ5+Csl0GS+0mRfz1SgZ3VDjHT7mzy4kPfMUZYbNjFPYS0Ly2/fab07M4HJmFRGeakViABPP5N6bEPatRgUYvCyIlftv+HWhoYQSlE2wE9j3JJzTO1GC4gdNXbaJH/qQr0OOyfKosHyfHUWkyjzmjkRj2mON6kbY66kECjPbxgPSfRRVP/aPdL9QMRAVZgm7yAJfxCvmPVdns1N8rdzi10s6gYJMt+221ZpHPBl5gqJ/A050+dXv/l8lh3NA3vkvLq3h/F44qs2vsDGw1t93NTEGzvwGKK+8NVdor3V87wU1SwEbMKTkJNcgfbczkKGOgguhJY+g0MB34c3kmWw4Py5KE8CrILMhM28jh0=',
+  // Fases EXATAS aceitas — IDs vêm do diagnóstico para filtro server-side preciso
+  ALLOWED_PHASE_IDS: {
+    '316588910': 'backlog',   // Backlog / Pedidos
+    '316705020': 'standby',   // StandBy
+    '320305552': 'doing',     // Doing
+    '319202807': 'enviado',   // Enviado para Cliente/Solicitante
+  },
+  ALLOWED_PHASE_NAMES: [
+    'Backlog / Pedidos',
+    'StandBy',
+    'Doing',
+    'Enviado para Cliente/Solicitante',
+  ],
+  // IDs das fases de destino do botão "Mover" (confirmados via diagnóstico)
+  MOVE_TARGETS: [
+    { id: '316705020', label: 'StandBy',     slug: 'standby',   comment: false, color: 'amber' },
+    { id: '319202807', label: 'Enviado para Cliente/Solicitante', short: 'Enviado', slug: 'enviado', comment: true, color: 'teal' },
+    { id: '316891459', label: 'Concluídos Geral', short: 'Concluído', slug: 'concluido', comment: false, color: 'green' },
+  ],
+  // Internal IDs confirmados via diagnóstico (Sprint 0):
+  REQUEST_FIELD_INTERNAL_ID: '364367165',       // Solicitação (select)
+  PIPEFY_LINK_INTERNAL_ID: '368440121',         // Link do card no Pipefy (long_text)
+  OBSERVATIONS_INTERNAL_ID: '343071802',        // Observações (long_text)
+  ATTACHMENT_INTERNAL_ID: '354695741',          // Anexo (attachment)
+  CLIENT_NAME_INTERNAL_ID: '343071639',         // Nome Do Cliente (short_text)
+  CAMPANHA_INTERNAL_ID: '368444707',            // Campanha (connector)
+
+  REQUEST_FIELD_NAMES: ['Solicitação', 'Solicitacao'],
+  // Valor oficial do dropdown: "Violação de marca" (m minúsculo). Também aceita "Violação Comercial" caso surja.
+  REQUEST_FIELD_VALUES: ['Violação de marca', 'Violação de Marca', 'Violação Comercial'],
+  PIPEFY_LINK_FIELD_NAMES: ['Link do card no Pipefy'],
+  OBSERVATIONS_FIELD_NAMES: ['Observações'],
+  ATTACHMENTS_FIELD_NAMES: ['Anexo'],
+  CAMPANHA_FIELD_NAMES: ['Campanha', 'Campanha '],
+  // Inclui "Nome Do Cliente" (D maiúsculo) como no card de Atendimento — confirmado pelo diagnóstico
+  // Inclui "Nome Do Cliente" (D maiúsculo) como no card de Atendimento — confirmado pelo diagnóstico
+  CLIENT_FIELD_NAMES: ['CLIENTE', 'Cliente', 'Nome Do Cliente', 'Nome do Cliente', 'Nome Cliente'],
+  // Único ajuste solicitado: adicionar o label EXATO "Nome do Agressor: Perfil / Vendedor / Empresa"
+  AGGRESSOR_PRIMARY_FIELD_NAMES: [
+    'Nome do Agressor: Perfil / Vendedor / Empresa',  // ← label exato do pipe Violação Comercial
+    'VENDEDOR', 'Vendedor',
+    'Perfil / Vendedor / Empresa', 'Perfil/Vendedor/Empresa',
+    'Seller', 'Perfil',
+    'Nome do Agressor', 'Agressor',
+  ],
+  AGGRESSOR_SECONDARY_FIELD_NAMES: ['NOME_SOCIAL_PLATAFORMA', 'Nome Social Plataforma', 'NOME_FANTASIA', 'Nome Fantasia', 'RAZAO_SOCIAL', 'Razão Social'],
+  PRODUCT_ID_FIELD_NAMES: ['ID do produto', 'ID do Produto', 'Id do produto', 'Product ID', 'ID_PRODUTO', 'ID CORRELATOR'],
+  PRODUCT_TITLE_FIELD_NAMES: ['Título do produto', 'Titulo do produto', 'Título do Produto', 'Titulo do Produto', 'Nome do produto', 'TITULO_PRODUTO'],
+  PRODUCT_LINK_FIELD_NAMES: ['Link do produto', 'Link do Produto', 'URL do produto', 'Link anúncio', 'Link do anuncio', 'LINK_PRODUTO', 'PRIMEIRO_GRANITA_VIOLACAO'],
+  EVIDENCE_FIELD_NAMES: ['Link da Evidência', 'Link da evidencia', 'Link de Evidência', 'Link de Evidencia', 'Evidência', 'Evidencia', 'PROFLE_GRAFITA_VIOLACAO', 'PRIMEIRO_GRANITA_VIOLACAO', 'Evidencia_Violacao', 'Prova_Violacao'],
+  VIOLATION_TYPE_FIELD_NAMES: ['Tipo de Violação', 'Tipo de Violacao', 'Tipo Violação', 'Tipo_Violacao'],
+  PLATFORM_FIELD_NAMES: ['PLATAFORMA_MONITORADA', 'Plataforma Monitorada', 'Plataforma'],
+  PAGE_SIZE: 30,
+  LINKED_CONCURRENCY: 6,
+  REFRESH_INTERVAL_SEC: 3600, // 1 hora
+  TOKEN_STORAGE_KEY: 'branddi_pipefy_token_v1',
+  DECRYPTED_TOKEN_CACHE_KEY: 'branddi_pipefy_token_cache_v1',
+  USER_NAME_OVERRIDE_KEY: 'branddi_user_name_override_v1',
+  AUDIT_LOG_KEY: 'branddi_audit_log_v1',
+  AUDIT_LOG_MAX_ENTRIES: 2000,
+};
+
+const state = {
+  token: '',
+  cards: [],        // attendance cards (enriched)
+  rows: [],         // flat rows for the table (one per product/link)
+  loading: false,
+  lastUpdate: null,
+  countdown: CONFIG.REFRESH_INTERVAL_SEC,
+  filters: { phase: 'all', nf: 'all', search: '' },
+  linkedCache: new Map(),
+  refreshTimer: null,
+  countdownTimer: null,
+  user: { name: '', email: '', source: 'anon' }, // anon | token | manual
+  auditLog: [],
+  auditFilters: { search: '', action: 'all' },
+};
+
+/* ============================================================================
+   UTIL
+   ============================================================================ */
+function $(id) { return document.getElementById(id); }
+function $$(sel) { return document.querySelectorAll(sel); }
+
+function normStr(s) {
+  return (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function findField(fields, names, internalId) {
+  if (!fields || !fields.length) return null;
+  // 1) Match exato por internal_id (fonte primária confiável — vem do diagnóstico)
+  if (internalId) {
+    const byId = fields.find(f => (f.field?.internal_id || f.internal_id) === internalId);
+    if (byId) return byId;
+  }
+  // 2) Match por label/name normalizado (tolerante a acento/caixa)
+  const targets = (Array.isArray(names) ? names : [names]).map(normStr);
+  return fields.find(f => {
+    const label = f.field?.label || f.name;
+    return targets.includes(normStr(label));
+  }) || null;
+}
+
+function isBareId(v) {
+  // Heurística: valor com 5+ dígitos e NADA além (sem letras, sem espaço)
+  return /^\d{5,}$/.test(String(v || '').trim());
+}
+
+function fieldValue(field) {
+  if (!field) return '';
+  const type = field.field?.type || '';
+
+  // Connector fields: "value" costuma ser o ID numérico; "native_value" é o label legível
+  if (type === 'connector') {
+    const nv = field.native_value ? String(field.native_value).trim() : '';
+    if (nv && !isBareId(nv)) return nv;
+    if (field.array_value && field.array_value.length) {
+      const labels = field.array_value.filter(v => v && !isBareId(v));
+      if (labels.length) return labels.join(', ');
+    }
+    // Nenhum label legível — retorna o que houver (marcado, mas sem mentir)
+    return nv || field.value || '';
+  }
+
+  // Campos normais
+  if (field.array_value && field.array_value.length) {
+    return field.array_value.join(', ');
+  }
+  if (field.value != null && field.value !== '') return field.value;
+  if (field.native_value != null) return field.native_value;
+  return '';
+}
+
+function fieldArray(field) {
+  if (!field) return [];
+  if (field.array_value && field.array_value.length) return field.array_value;
+  const v = fieldValue(field);
+  if (!v) return [];
+  try {
+    const parsed = JSON.parse(v);
+    if (Array.isArray(parsed)) return parsed;
+  } catch(e) { /* not json */ }
+  return [v];
+}
+
+function phaseSlug(nameOrId) {
+  // Match estrito para evitar falsos positivos com fases similares:
+  // "Backlog - Solicitações de negativação" NÃO deve virar "backlog"
+  // "Enviado - Solicitação de negativação" NÃO deve virar "enviado"
+  if (CONFIG.ALLOWED_PHASE_IDS && CONFIG.ALLOWED_PHASE_IDS[nameOrId]) {
+    return CONFIG.ALLOWED_PHASE_IDS[nameOrId];
+  }
+  const n = normStr(nameOrId);
+  if (n === 'backlog / pedidos' || n === 'backlog/pedidos') return 'backlog';
+  if (n === 'standby' || n === 'stand by' || n === 'stand-by') return 'standby';
+  if (n === 'doing') return 'doing';
+  if (n === 'enviado para cliente/solicitante' || n === 'enviado para cliente / solicitante') return 'enviado';
+  return 'other';
+}
+
+function phaseSlugFromCard(card) {
+  // Prioriza ID (infalível); fallback para nome
+  const id = card?.current_phase?.id;
+  if (id && CONFIG.ALLOWED_PHASE_IDS[id]) return CONFIG.ALLOWED_PHASE_IDS[id];
+  return phaseSlug(card?.current_phase?.name || '');
+}
+
+function phaseLabel(slug) {
+  const map = { backlog: 'Backlog', standby: 'StandBy', doing: 'Doing', enviado: 'Enviado' };
+  return map[slug] || slug;
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  const date = new Date(d);
+  if (isNaN(date)) return '—';
+  return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+}
+
+function formatShortDate(d) {
+  if (!d) return '—';
+  const date = new Date(d);
+  if (isNaN(date)) return '—';
+  return date.toLocaleDateString('pt-BR');
+}
+
+/* ============================================================================
+   DESCRIPTOGRAFIA DO TOKEN COMPARTILHADO
+   Suporta 2 formatos:
+     v1: AES-GCM 256 + PBKDF2 200k   (gerado pelo token-encrypt.html no browser)
+     v2: AES-CBC 256 + HMAC-SHA256   (gerado via OpenSSL CLI, encrypt-then-MAC)
+   Ambos criptograficamente seguros.
+   ============================================================================ */
+async function deriveKeyPBKDF2(password, salt, usage, algoConfig) {
+  const enc = new TextEncoder();
+  const passKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 200000, hash: 'SHA-256' },
+    passKey,
+    algoConfig,
+    false,
+    [usage]
+  );
+}
+
+async function deriveBitsPBKDF2(password, salt, lengthBits) {
+  const enc = new TextEncoder();
+  const passKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
+  return crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations: 200000, hash: 'SHA-256' },
+    passKey,
+    lengthBits
+  );
+}
+
+function constantTimeEq(a, b) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+
+async function decryptV1(combined, password) {
+  // v1: salt(16) + iv(12) + ciphertext+authTag (AES-GCM)
+  const salt = combined.slice(0, 16);
+  const iv = combined.slice(16, 28);
+  const ciphertext = combined.slice(28);
+  const key = await deriveKeyPBKDF2(password, salt, 'decrypt', { name: 'AES-GCM', length: 256 });
+  const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+  return new TextDecoder().decode(plaintext);
+}
+
+async function decryptV2(combined, password) {
+  // v2: salt(16) + iv(16) + ciphertext(variable) + hmac(32)
+  if (combined.length < 16 + 16 + 16 + 32) throw new Error('Payload v2 muito curto');
+  const salt = combined.slice(0, 16);
+  const iv = combined.slice(16, 32);
+  const ctEnd = combined.length - 32;
+  const ciphertext = combined.slice(32, ctEnd);
+  const hmacTag = combined.slice(ctEnd);
+
+  // Deriva 64 bytes → encKey (32) + macKey (32)
+  const keysBuf = await deriveBitsPBKDF2(password, salt, 512);
+  const keysBytes = new Uint8Array(keysBuf);
+  const encKeyBytes = keysBytes.slice(0, 32);
+  const macKeyBytes = keysBytes.slice(32, 64);
+
+  // Verifica HMAC-SHA256 sobre (iv || ciphertext) — constant-time
+  const hmacKey = await crypto.subtle.importKey('raw', macKeyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['verify','sign']);
+  const macInput = new Uint8Array(iv.length + ciphertext.length);
+  macInput.set(iv, 0);
+  macInput.set(ciphertext, iv.length);
+  const expectedTagBuf = await crypto.subtle.sign('HMAC', hmacKey, macInput);
+  const expectedTag = new Uint8Array(expectedTagBuf);
+  if (!constantTimeEq(expectedTag, hmacTag)) throw new Error('Autenticação falhou — senha incorreta ou payload corrompido');
+
+  // Decripta AES-CBC
+  const aesKey = await crypto.subtle.importKey('raw', encKeyBytes, { name: 'AES-CBC' }, false, ['decrypt']);
+  const plaintext = await crypto.subtle.decrypt({ name: 'AES-CBC', iv }, aesKey, ciphertext);
+  return new TextDecoder().decode(plaintext);
+}
+
+async function decryptSharedToken(payload, password) {
+  if (!payload) throw new Error('Payload ausente');
+  if (payload.startsWith('v1:')) {
+    const combined = Uint8Array.from(atob(payload.slice(3)), c => c.charCodeAt(0));
+    return decryptV1(combined, password);
+  }
+  if (payload.startsWith('v2:')) {
+    const combined = Uint8Array.from(atob(payload.slice(3)), c => c.charCodeAt(0));
+    return decryptV2(combined, password);
+  }
+  throw new Error('Formato de payload não reconhecido (esperado v1: ou v2:)');
+}
+
+function getCachedDecryptedToken() {
+  try { return localStorage.getItem(CONFIG.DECRYPTED_TOKEN_CACHE_KEY) || ''; } catch(e) { return ''; }
+}
+function setCachedDecryptedToken(token) {
+  try { localStorage.setItem(CONFIG.DECRYPTED_TOKEN_CACHE_KEY, token); } catch(e) {}
+}
+function clearCachedDecryptedToken() {
+  try { localStorage.removeItem(CONFIG.DECRYPTED_TOKEN_CACHE_KEY); } catch(e) {}
+}
+
+/* ============================================================================
+   IDENTIFICAÇÃO DE USUÁRIO (JWT decode) + AUDIT LOG
+   ============================================================================ */
+function decodeJwt(token) {
+  try {
+    const parts = (token || '').split('.');
+    if (parts.length !== 3) return null;
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '==='.slice((b64.length + 3) % 4);
+    const json = decodeURIComponent(atob(padded).split('').map(c =>
+      '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+    ).join(''));
+    return JSON.parse(json);
+  } catch (e) { return null; }
+}
+
+function deriveNameFromEmail(email) {
+  if (!email || typeof email !== 'string') return '';
+  const prefix = email.split('@')[0] || '';
+  // "duda.nicolau" -> "Duda Nicolau"
+  return prefix
+    .split(/[._\-+]+/)
+    .filter(Boolean)
+    .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function identifyUserFromToken(token) {
+  const payload = decodeJwt(token);
+  const email = payload?.user?.email || '';
+  const name = deriveNameFromEmail(email);
+  // Aplica override manual do nome se houver (mantém o e-mail detectado)
+  let manualName = '';
+  try { manualName = localStorage.getItem(CONFIG.USER_NAME_OVERRIDE_KEY) || ''; } catch(e) {}
+  const finalName = manualName || name;
+  state.user = {
+    name: finalName || email || 'Usuário anônimo',
+    email: email || '',
+    source: email ? (manualName ? 'manual-name' : 'token') : 'anon',
+  };
+  return state.user;
+}
+
+function setUserNameOverride(name) {
+  const trimmed = (name || '').trim();
+  if (trimmed) {
+    try { localStorage.setItem(CONFIG.USER_NAME_OVERRIDE_KEY, trimmed); } catch(e) {}
+    state.user.name = trimmed;
+    state.user.source = 'manual-name';
+  } else {
+    // Limpa override — recalcula do token
+    try { localStorage.removeItem(CONFIG.USER_NAME_OVERRIDE_KEY); } catch(e) {}
+    identifyUserFromToken(state.token);
+  }
+  renderUserChip();
+}
+
+/* --- Audit log --- */
+function loadAuditLog() {
+  try {
+    const raw = localStorage.getItem(CONFIG.AUDIT_LOG_KEY);
+    if (raw) state.auditLog = JSON.parse(raw) || [];
+  } catch (e) { state.auditLog = []; }
+}
+
+function persistAuditLog() {
+  try {
+    // Limita o tamanho para não estourar localStorage (~5MB)
+    if (state.auditLog.length > CONFIG.AUDIT_LOG_MAX_ENTRIES) {
+      state.auditLog = state.auditLog.slice(-CONFIG.AUDIT_LOG_MAX_ENTRIES);
+    }
+    localStorage.setItem(CONFIG.AUDIT_LOG_KEY, JSON.stringify(state.auditLog));
+  } catch(e) { console.warn('[audit] falha ao persistir:', e.message); }
+}
+
+function recordAudit(entry) {
+  const ts = new Date().toISOString();
+  const brasilia = brasiliaTimestamp();
+  const record = {
+    id: 'a_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+    timestamp: ts,
+    timestampLocal: brasilia.full,
+    user: state.user.name || 'Anônimo',
+    userEmail: state.user.email || '',
+    userSource: state.user.source,
+    action: entry.action,       // ex: 'move', 'email-copy'
+    actionLabel: entry.actionLabel,
+    cardId: entry.cardId || '',
+    cardTitle: entry.cardTitle || '',
+    fromPhase: entry.fromPhase || '',
+    toPhase: entry.toPhase || '',
+    details: entry.details || '',
+    success: entry.success !== false,
+    error: entry.error || '',
+  };
+  state.auditLog.push(record);
+  persistAuditLog();
+  // Re-renderiza contador no header
+  updateAuditBadge();
+  return record;
+}
+
+function getCardLastAction(cardId) {
+  if (!cardId) return null;
+  const sid = String(cardId);
+  for (let i = state.auditLog.length - 1; i >= 0; i--) {
+    if (String(state.auditLog[i].cardId) === sid) return state.auditLog[i];
+  }
+  return null;
+}
+
+/* ============================================================================
+   DETECÇÃO DE PLATAFORMA (e-commerce/marketplace) a partir de URLs
+   ============================================================================ */
+const PLATFORM_PATTERNS = [
+  { name: 'Mercado Livre', re: /(?:mercadolivre|mercadolibre|produto\.mercadolivre|mlb\.mercadolivre|click1\.mercadolivre|click\.mercadolivre)\.com(?:\.br)?/i },
+  { name: 'Shopee',        re: /shopee\.com(?:\.br)?/i },
+  { name: 'Amazon',        re: /amazon\.com(?:\.br)?/i },
+  { name: 'Magalu',        re: /(?:magazineluiza|magalu)\.com(?:\.br)?/i },
+  { name: 'Americanas',    re: /americanas\.com(?:\.br)?/i },
+  { name: 'Submarino',     re: /submarino\.com(?:\.br)?/i },
+  { name: 'Casas Bahia',   re: /casasbahia\.com(?:\.br)?/i },
+  { name: 'Extra',         re: /\bextra\.com(?:\.br)?/i },
+  { name: 'Carrefour',     re: /carrefour\.com(?:\.br)?/i },
+  { name: 'AliExpress',    re: /aliexpress\.com/i },
+  { name: 'Shein',         re: /shein\.com(?:\.br)?/i },
+  { name: 'OLX',           re: /olx\.com(?:\.br)?/i },
+  { name: 'Enjoei',        re: /enjoei\.com(?:\.br)?/i },
+  { name: 'Netshoes',      re: /netshoes\.com(?:\.br)?/i },
+  { name: 'Centauro',      re: /centauro\.com(?:\.br)?/i },
+  { name: 'Dafiti',        re: /dafiti\.com(?:\.br)?/i },
+  { name: 'TikTok Shop',   re: /tiktok\.com.*\/shop/i },
+  { name: 'Instagram',     re: /instagram\.com/i },
+  { name: 'Facebook',      re: /facebook\.com|fb\.com/i },
+  { name: 'Google Ads',    re: /(?:googleadservices|doubleclick|google\.com\/(?:aclk|search))/i },
+];
+
+function detectPlatformsFromUrls(urls) {
+  // Recebe array de strings (URLs) e retorna lista única e ordenada de plataformas
+  const found = new Set();
+  for (const u of urls || []) {
+    if (!u || typeof u !== 'string') continue;
+    for (const p of PLATFORM_PATTERNS) {
+      if (p.re.test(u)) found.add(p.name);
+    }
+  }
+  // Ordem preferencial: ML primeiro, Shopee segundo, demais alfabéticos
+  const priority = ['Mercado Livre', 'Shopee'];
+  return Array.from(found).sort((a, b) => {
+    const pa = priority.indexOf(a), pb = priority.indexOf(b);
+    if (pa !== -1 || pb !== -1) {
+      if (pa === -1) return 1;
+      if (pb === -1) return -1;
+      return pa - pb;
+    }
+    return a.localeCompare(b);
+  });
+}
+
+function formatPlatformList(platforms) {
+  // [] → '', ['ML'] → 'Mercado Livre', ['ML','Shopee'] → 'Mercado Livre e Shopee',
+  // ['ML','Shopee','Magalu'] → 'Mercado Livre, Shopee e Magalu'
+  if (!platforms || !platforms.length) return '';
+  if (platforms.length === 1) return platforms[0];
+  if (platforms.length === 2) return platforms[0] + ' e ' + platforms[1];
+  return platforms.slice(0, -1).join(', ') + ' e ' + platforms[platforms.length - 1];
+}
+
+function collectUrlsFromLinkedCard(linkedCard) {
+  // Coleta TODAS as URLs presentes nos campos do card (produto, evidência, etc.)
+  if (!linkedCard || !linkedCard.fields) return [];
+  const urls = [];
+  for (const f of linkedCard.fields) {
+    const val = fieldValue(f);
+    if (!val) continue;
+    // Pode haver múltiplas URLs no mesmo valor (separadas por espaço/quebra de linha)
+    const matches = String(val).match(/https?:\/\/[^\s<>"]+/gi);
+    if (matches) urls.push(...matches);
+  }
+  return urls;
+}
+
+function detectPlatformsForCard(card) {
+  // Agrega URLs de todos os cards vinculados — usado para o ASSUNTO do e-mail (multi-produto)
+  const allUrls = [];
+  for (const linked of (card.linkedCards || [])) {
+    if (!linked || linked._notFound) continue;
+    allUrls.push(...collectUrlsFromLinkedCard(linked));
+  }
+  return detectPlatformsFromUrls(allUrls);
+}
+
+function detectPlatformsForLinkedCard(linkedCard) {
+  // Plataformas de UM card específico — usado no comentário individual de cada card vinculado
+  return detectPlatformsFromUrls(collectUrlsFromLinkedCard(linkedCard));
+}
+
+/* ============================================================================
+   HELPERS — datas, dias úteis, link de card
+   ============================================================================ */
+function addBusinessDays(days, fromDate) {
+  // Pula sábado (6) e domingo (0). Conta 'days' dias úteis a partir de fromDate.
+  const d = new Date(fromDate || new Date());
+  let added = 0;
+  while (added < days) {
+    d.setDate(d.getDate() + 1);
+    const dow = d.getDay();
+    if (dow !== 0 && dow !== 6) added++;
+  }
+  return d;
+}
+
+function dateToBrasiliaIso(d, hour = 23, minute = 59) {
+  // Retorna ISO 8601 com offset -03:00 para uso na mutation updateCard
+  // Ex: 2026-04-30T23:59:00-03:00
+  const dt = new Date(d);
+  // Reconstrói a data no fuso de Brasília (sem horário de verão = -03:00 fixo desde 2019)
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(dt);
+  const get = t => parts.find(p => p.type === t)?.value || '';
+  const y = get('year'), m = get('month'), day = get('day');
+  const hh = String(hour).padStart(2, '0');
+  const mm = String(minute).padStart(2, '0');
+  return `${y}-${m}-${day}T${hh}:${mm}:00-03:00`;
+}
+
+function formatDateBr(d) {
+  const dt = new Date(d);
+  return new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit', month: '2-digit', year: 'numeric'
+  }).format(dt);
+}
+
+function cardLinkUrl(cardId) {
+  return `https://app.pipefy.com/open-cards/${cardId}`;
+}
+
+function appendCardLink(commentText, attendanceCardId) {
+  // Anexa o link do card de Atendimento ao final de todo comentário.
+  // Pipefy converte URLs em hyperlinks automaticamente.
+  if (!attendanceCardId) return commentText;
+  return commentText.replace(/\s+$/, '') + `\n\n🔗 ${cardLinkUrl(attendanceCardId)}`;
+}
+
+function brasiliaTimestamp() {
+  // Gera data/hora no fuso de Brasília (America/Sao_Paulo, GMT-3) — independente do fuso do navegador
+  const d = new Date();
+  const tz = { timeZone: 'America/Sao_Paulo' };
+  const parts = new Intl.DateTimeFormat('pt-BR', {
+    ...tz,
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(d);
+  const get = t => parts.find(p => p.type === t)?.value || '';
+  const date = `${get('day')}/${get('month')}/${get('year')}`;
+  const time = `${get('hour')}:${get('minute')}`;
+  return { date, time, full: `${date} às ${time}` };
+}
+
+function formatCountdown(totalSec) {
+  const s = Math.max(0, totalSec | 0);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const pad = n => String(n).padStart(2, '0');
+  if (h > 0) return `${pad(h)}:${pad(m)}:${pad(sec)}`;
+  return `${pad(m)}:${pad(sec)}`;
+}
+
+function todayFull() {
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+function getHourGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Bom dia';
+  if (h < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
+
+function extractCardIds(rawValue) {
+  if (!rawValue) return [];
+  const text = Array.isArray(rawValue) ? rawValue.join(' ') : String(rawValue);
+  const ids = new Set();
+
+  // URLs: open-cards/123, card/123, cardId=123, /cards/123
+  const patterns = [
+    /(?:open-cards|cards?|public\/card)\/(\d{5,})/gi,
+    /[?&]cardId=(\d{5,})/gi,
+    /pipefy\.com\/[^\s]*?\/(\d{5,})(?:\D|$)/gi,
+  ];
+  for (const p of patterns) {
+    let m; while ((m = p.exec(text)) !== null) ids.add(m[1]);
+  }
+  // Fallback: bare numbers of 6+ digits if nothing matched
+  if (ids.size === 0) {
+    const bare = text.match(/\b\d{6,}\b/g);
+    if (bare) bare.forEach(n => ids.add(n));
+  }
+  return Array.from(ids);
+}
+
+function filenameFromUrl(url) {
+  try {
+    const p = url.split('?')[0].split('/').pop() || '';
+    return decodeURIComponent(p).trim() || 'arquivo';
+  } catch (e) {
+    return 'arquivo';
+  }
+}
+
+function pathFromUrl(url) {
+  // Extrai o path após /signed/ ou /uploads/ para dedupe confiável
+  try {
+    const clean = url.split('?')[0];
+    const m = clean.match(/\/(?:signed|uploads|storage)\/(.+)$/i);
+    return m ? m[1] : clean;
+  } catch (e) { return url; }
+}
+
+function extractAttachmentsFromFields(fields) {
+  const out = [];
+  if (!fields) return out;
+
+  const parseItems = (f, sourceTag) => {
+    const arr = f.array_value && f.array_value.length ? f.array_value :
+      (() => { try { const p = JSON.parse(f.value); return Array.isArray(p) ? p : null; } catch(e){ return null; } })();
+    if (!arr) return [];
+    const items = [];
+    for (const item of arr) {
+      if (typeof item !== 'string') continue;
+      if (!/^https?:\/\//i.test(item)) continue;
+      items.push({ url: item, name: filenameFromUrl(item), source: sourceTag || 'campo' });
+    }
+    return items;
+  };
+
+  const anexosField = findField(fields, CONFIG.ATTACHMENTS_FIELD_NAMES, CONFIG.ATTACHMENT_INTERNAL_ID);
+  if (anexosField) {
+    out.push(...parseItems(anexosField, 'campo Anexo'));
+  } else {
+    // Fallback: varre todos os campos buscando URLs de upload/storage
+    for (const f of fields) {
+      const items = parseItems(f, 'campo ' + (f.name || ''));
+      for (const it of items) {
+        if (/\.(pdf|png|jpe?g|xlsx?|docx?|pptx?|zip|rar|csv|txt|heic|webp|gif|msg|eml)(\?|$)/i.test(it.url) ||
+            it.url.includes('/uploads/') || it.url.includes('/storage/')) {
+          out.push(it);
+        }
+      }
+    }
+  }
+  return out;
+}
+
+function combineAttachments(fromFields, fromCardTab) {
+  // Combina anexos do campo "Anexo" + aba superior "Anexos" com dedupe
+  // Critério: mesmo path (normalizado) OU mesmo nome de arquivo
+  const all = [];
+  (fromFields || []).forEach(a => all.push(a));
+  (fromCardTab || []).forEach(a => all.push({
+    url: a.url,
+    name: filenameFromUrl(a.url),
+    source: 'aba Anexos'
+  }));
+
+  const seen = new Map();  // key = path normalizado ou nome normalizado
+  const result = [];
+  for (const a of all) {
+    const path = pathFromUrl(a.url);
+    const nameKey = normStr(a.name);
+    const key = path && path !== a.url ? path : nameKey;
+    if (seen.has(key)) {
+      // Arquivo duplicado — mantém o primeiro (prioridade do campo "Anexo" por estar antes no array)
+      // mas marca origem como "campo + aba" se vier de fontes diferentes
+      const existing = seen.get(key);
+      if (existing.source !== a.source) {
+        existing.source = 'campo + aba';
+      }
+      continue;
+    }
+    const rec = { ...a };
+    seen.set(key, rec);
+    result.push(rec);
+  }
+  return result;
+}
+
+function hasNotaFiscal(attachments) {
+  if (!attachments || !attachments.length) return false;
+  // Substring (sem word boundary): "NFe.pdf", "nfseller.pdf", "nota-fiscal.png" todos contam
+  return attachments.some(a => /(nf|nota\s*fiscal)/i.test(a.name));
+}
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function truncate(s, n) {
+  if (!s) return '';
+  s = String(s);
+  return s.length > n ? s.slice(0, n - 1) + '…' : s;
+}
+
+/* ============================================================================
+   PIPEFY API
+   ============================================================================ */
+
+async function gql(query, variables = {}) {
+  const res = await fetch(CONFIG.API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${state.token}`,
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(()=> '');
+    // Token inválido/expirado: invalida cache e força nova senha/onboarding
+    if (res.status === 401 || res.status === 403) {
+      handleAuthFailure();
+      throw new Error(`Autenticação falhou (HTTP ${res.status}). Token pode estar expirado.`);
+    }
+    throw new Error(`HTTP ${res.status}: ${txt.slice(0,200)}`);
+  }
+  const json = await res.json();
+  if (json.errors) {
+    const msg = json.errors.map(e => e.message).join(' | ');
+    if (/unauthor|invalid.*token|expired/i.test(msg)) handleAuthFailure();
+    throw new Error(msg);
+  }
+  return json.data;
+}
+
+function handleAuthFailure() {
+  // Limpa o cache do token descriptografado e força novo desbloqueio
+  clearCachedDecryptedToken();
+  state.token = '';
+  if (CONFIG.ENCRYPTED_TOKEN) {
+    showUnlockScreen('Token expirado ou inválido. Digite a senha novamente.');
+  } else {
+    try { localStorage.removeItem(CONFIG.TOKEN_STORAGE_KEY); } catch(e) {}
+    showOnboardingScreen();
+  }
+}
+
+// Busca cards de UMA fase específica — muito mais eficiente que paginar 18k cards do pipe todo.
+const PHASE_CARDS_QUERY = `
+  query PhaseCards($phaseId: ID!, $cursor: String) {
+    phase(id: $phaseId) {
+      cards(first: ${CONFIG.PAGE_SIZE}, after: $cursor) {
+        edges {
+          node {
+            id
+            title
+            created_at
+            current_phase { id name }
+            fields {
+              name
+              value
+              native_value
+              array_value
+              field { id internal_id label type }
+            }
+            attachments {
+              url
+              path
+              createdAt
+            }
+          }
+        }
+        pageInfo { endCursor hasNextPage }
+      }
+    }
+  }
+`;
+
+const MOVE_CARD_MUTATION = `
+  mutation MoveCard($cardId: ID!, $phaseId: ID!) {
+    moveCardToPhase(input: { card_id: $cardId, destination_phase_id: $phaseId }) {
+      card { id current_phase { id name } }
+    }
+  }
+`;
+
+const CREATE_COMMENT_MUTATION = `
+  mutation CreateComment($cardId: ID!, $text: String!) {
+    createComment(input: { card_id: $cardId, text: $text }) {
+      comment { id text }
+    }
+  }
+`;
+
+const UPDATE_CARD_DUE_DATE_MUTATION = `
+  mutation UpdateCardDueDate($cardId: ID!, $dueDate: DateTime) {
+    updateCard(input: { id: $cardId, due_date: $dueDate }) {
+      card { id due_date }
+    }
+  }
+`;
+
+async function setCardDueDate(cardId, dueDateIso) {
+  return gql(UPDATE_CARD_DUE_DATE_MUTATION, { cardId: String(cardId), dueDate: dueDateIso });
+}
+
+const CARD_QUERY = `
+  query SingleCard($id: ID!) {
+    card(id: $id) {
+      id
+      title
+      url
+      fields {
+        name
+        value
+        native_value
+        array_value
+        field { id internal_id label type }
+      }
+    }
+  }
+`;
+
+async function fetchAllAttendanceCards(onProgress) {
+  // Busca APENAS nas 4 fases de interesse (em vez de paginar os 18k cards do pipe todo).
+  // Reduz de ~500 requisições para ~20, e elimina 17k+ cards de "Concluídos Geral" e de negativação.
+  const all = [];
+  const phases = Object.keys(CONFIG.ALLOWED_PHASE_IDS);
+  let pageCount = 0;
+  for (const phaseId of phases) {
+    let cursor = null;
+    let hasNext = true;
+    while (hasNext) {
+      pageCount++;
+      const data = await gql(PHASE_CARDS_QUERY, { phaseId, cursor });
+      const conn = data.phase?.cards;
+      const edges = conn?.edges || [];
+      for (const e of edges) all.push(e.node);
+      hasNext = conn?.pageInfo?.hasNextPage || false;
+      cursor = conn?.pageInfo?.endCursor || null;
+      if (onProgress) onProgress(all.length, pageCount, hasNext || phases.indexOf(phaseId) < phases.length - 1);
+      if (!hasNext) break;
+    }
+  }
+  return all;
+}
+
+async function moveCardToPhase(cardId, target, opts) {
+  // target = entrada de CONFIG.MOVE_TARGETS
+  // opts = { card, emailSubject, fromPhaseSlug }
+  const fromPhaseSlug = opts?.fromPhaseSlug || '';
+  const moveRes = await gql(MOVE_CARD_MUTATION, { cardId: String(cardId), phaseId: String(target.id) });
+  const newPhase = moveRes?.moveCardToPhase?.card?.current_phase;
+
+  // Regra de vencimento: ao sair da fase Backlog (para qualquer destino),
+  // setar due_date = hoje + 3 dias úteis (23:59 Brasília)
+  let dueDateUpdated = null;
+  if (fromPhaseSlug === 'backlog') {
+    const due = addBusinessDays(3);
+    const dueIso = dateToBrasiliaIso(due);
+    try {
+      await setCardDueDate(cardId, dueIso);
+      dueDateUpdated = { iso: dueIso, br: formatDateBr(due) };
+    } catch (err) {
+      console.warn('[move] falha ao atualizar due_date (segue sem bloquear):', err.message);
+    }
+  }
+
+  // Comentários automáticos SOMENTE se a fase destino for "Enviado para Cliente/Solicitante"
+  if (target.comment) {
+    const ts = brasiliaTimestamp();
+    const userLabel = state.user.name || state.user.email || 'Usuário anônimo';
+
+    // 1) Comentário no card de Atendimento — formato curto + link no final
+    let attendanceComment = `E-mail enviado em: ${ts.date} às ${ts.time} por ${userLabel}`;
+    attendanceComment = appendCardLink(attendanceComment, cardId);
+    try {
+      await gql(CREATE_COMMENT_MUTATION, { cardId: String(cardId), text: attendanceComment });
+    } catch (err) {
+      console.warn('[move] card movido, mas falha ao comentar no Atendimento:', err.message);
+      throw new Error('Card movido, mas o comentário no Atendimento não foi criado: ' + err.message);
+    }
+
+    // 2) Comentários nos cards de Violação vinculados (um por card, com plataforma específica)
+    const card = opts?.card;
+    const emailSubject = opts?.emailSubject || '';
+    if (card?.linkedCards?.length) {
+      const violationCommentResults = await Promise.allSettled(
+        card.linkedCards
+          .filter(linked => linked && !linked._notFound && linked.id)
+          .map(async (linked) => {
+            const platforms = detectPlatformsForLinkedCard(linked);
+            const platformLabel = platforms.length > 1 ? 'Ambas (' + formatPlatformList(platforms) + ')'
+                                : platforms.length === 1 ? platforms[0]
+                                : 'Não identificada';
+            const commentLines = [
+              `🔔 Atualização: E-mail de confirmação de denúncia enviado ao cliente em ${ts.date} por ${userLabel}.`,
+              '',
+            ];
+            if (emailSubject) {
+              commentLines.push(`Assunto: ${emailSubject}`);
+              commentLines.push('');
+            }
+            commentLines.push('Aguardando retorno em até 3 dias úteis para manutenção ou retirada da denúncia.');
+            commentLines.push('');
+            commentLines.push(`Plataforma: ${platformLabel}`);
+            // Link do Card de Atendimento sempre no fim
+            const text = appendCardLink(commentLines.join('\n'), cardId);
+            return gql(CREATE_COMMENT_MUTATION, { cardId: String(linked.id), text });
+          })
+      );
+      const failed = violationCommentResults.filter(r => r.status === 'rejected');
+      if (failed.length) {
+        console.warn(`[move] ${failed.length} comentário(s) em cards de Violação falharam:`, failed);
+      }
+    }
+  }
+
+  return { newPhase, dueDateUpdated };
+}
+
+async function fetchLinkedCard(id) {
+  if (state.linkedCache.has(id)) return state.linkedCache.get(id);
+  try {
+    const data = await gql(CARD_QUERY, { id });
+    state.linkedCache.set(id, data.card || null);
+    return data.card || null;
+  } catch (err) {
+    console.warn('Falha ao buscar card vinculado', id, err.message);
+    state.linkedCache.set(id, null);
+    return null;
+  }
+}
+
+async function mapConcurrent(items, concurrency, worker) {
+  const results = new Array(items.length);
+  let i = 0;
+  async function next() {
+    const idx = i++;
+    if (idx >= items.length) return;
+    try { results[idx] = await worker(items[idx], idx); } catch (e) { results[idx] = null; }
+    return next();
+  }
+  const runners = Array.from({length: Math.min(concurrency, items.length)}, () => next());
+  await Promise.all(runners);
+  return results;
+}
+
+/* ============================================================================
+   DATA PROCESSING
+   ============================================================================ */
+
+function isAttendanceMatch(card) {
+  // Fase: match estrito por ID (fonte de verdade do diagnóstico)
+  const slug = phaseSlugFromCard(card);
+  if (!['backlog','standby','doing','enviado'].includes(slug)) return false;
+
+  // Solicitação: match por internal_id (infalível) + valor
+  const reqField = findField(card.fields, CONFIG.REQUEST_FIELD_NAMES, CONFIG.REQUEST_FIELD_INTERNAL_ID);
+  if (!reqField) return false;
+  const val = normStr(fieldValue(reqField));
+  if (!val) return false;
+  // 1) match exato com qualquer valor aceito (normalizado sem acento/caixa)
+  if (CONFIG.REQUEST_FIELD_VALUES.some(v => val === normStr(v))) return true;
+  // 2) tolerância: "violacao" + ("marca" OU "comercial") — cobre variações ortográficas
+  if (/violac(ao|\u00e3o)/.test(val) && /(marca|comercial)/.test(val)) return true;
+  return false;
+}
+
+function extractLinkedCardIds(card) {
+  const linkField = findField(card.fields, CONFIG.PIPEFY_LINK_FIELD_NAMES, CONFIG.PIPEFY_LINK_INTERNAL_ID);
+  if (!linkField) return [];
+  // Value can be string with URLs/newlines, or array
+  if (linkField.array_value && linkField.array_value.length) {
+    const ids = new Set();
+    for (const v of linkField.array_value) extractCardIds(v).forEach(id => ids.add(id));
+    return Array.from(ids);
+  }
+  return extractCardIds(fieldValue(linkField));
+}
+
+function resolveClientName(attendanceCard, linkedFields) {
+  // Cascata de fallbacks — nunca retorna ID numérico cru
+  // 1) Campo CLIENTE no card de Violação (prioridade por sua decisão)
+  if (linkedFields && linkedFields.length) {
+    const v = fieldValue(findField(linkedFields, CONFIG.CLIENT_FIELD_NAMES, CONFIG.CLIENT_NAME_INTERNAL_ID));
+    if (v && !isBareId(v)) return { name: v, source: 'violacao' };
+  }
+  // 2) "Nome Do Cliente" no card de Atendimento (short_text, valor direto)
+  const nomeClienteField = findField(attendanceCard.fields, ['Nome Do Cliente','Nome do Cliente'], CONFIG.CLIENT_NAME_INTERNAL_ID);
+  const nomeVal = fieldValue(nomeClienteField);
+  if (nomeVal && !isBareId(nomeVal)) return { name: nomeVal, source: 'atendimento' };
+  // 3) Title do card de Atendimento (costuma ser o nome do cliente, ex: "DHL")
+  if (attendanceCard.title && !isBareId(attendanceCard.title)) {
+    return { name: attendanceCard.title, source: 'titulo' };
+  }
+  // 4) Campanha (connector — após o fix do fieldValue, já vem como label "DHL")
+  const campField = findField(attendanceCard.fields, CONFIG.CAMPANHA_FIELD_NAMES, CONFIG.CAMPANHA_INTERNAL_ID);
+  const campVal = fieldValue(campField);
+  if (campVal && !isBareId(campVal)) return { name: campVal, source: 'campanha' };
+  // 5) Último recurso: vazio
+  return { name: '', source: 'none' };
+}
+
+async function enrichCard(attendanceCard) {
+  const linkedIds = extractLinkedCardIds(attendanceCard);
+  const linkedCards = [];
+  if (linkedIds.length) {
+    const results = await mapConcurrent(linkedIds, CONFIG.LINKED_CONCURRENCY, id => fetchLinkedCard(id));
+    for (let i = 0; i < results.length; i++) {
+      if (results[i]) linkedCards.push(results[i]);
+      else linkedCards.push({ id: linkedIds[i], _notFound: true });
+    }
+  }
+
+  // Anexos: combina aba superior (card.attachments) + campo "Anexo" (dedupe por path/nome)
+  const fieldAttachments = extractAttachmentsFromFields(attendanceCard.fields);
+  const tabAttachments = (attendanceCard.attachments || []).map(a => ({
+    url: a.url, name: filenameFromUrl(a.url), source: 'aba Anexos'
+  }));
+  const attachments = combineAttachments(fieldAttachments, tabAttachments);
+
+  // Tipo de caso (do campo Solicitação): Violação de Marca | Violação Comercial
+  const reqField = findField(attendanceCard.fields, CONFIG.REQUEST_FIELD_NAMES, CONFIG.REQUEST_FIELD_INTERNAL_ID);
+  const requestRaw = fieldValue(reqField);
+  const requestNorm = normStr(requestRaw);
+  let caseType = '';      // 'marca' | 'comercial' | ''
+  let caseTypeLabel = ''; // 'Violação de Marca' | 'Violação Comercial' | ''
+  if (requestNorm.includes('marca')) { caseType = 'marca'; caseTypeLabel = 'Violação de Marca'; }
+  else if (requestNorm.includes('comercial')) { caseType = 'comercial'; caseTypeLabel = 'Violação Comercial'; }
+  const clientField = findField(attendanceCard.fields, CONFIG.CLIENT_FIELD_NAMES, CONFIG.CLIENT_NAME_INTERNAL_ID);
+  const campanhaField = findField(attendanceCard.fields, CONFIG.CAMPANHA_FIELD_NAMES, CONFIG.CAMPANHA_INTERNAL_ID);
+  const obsField = findField(attendanceCard.fields, CONFIG.OBSERVATIONS_FIELD_NAMES, CONFIG.OBSERVATIONS_INTERNAL_ID);
+  const linkField = findField(attendanceCard.fields, CONFIG.PIPEFY_LINK_FIELD_NAMES, CONFIG.PIPEFY_LINK_INTERNAL_ID);
+
+  // Cliente no card de Atendimento com cascata de fallbacks (evita ID cru)
+  const atdClientResolution = resolveClientName(attendanceCard, null);
+  const atdClientName = atdClientResolution.name;
+  const atdClientSource = atdClientResolution.source;
+
+  return {
+    id: attendanceCard.id,
+    title: attendanceCard.title,
+    createdAt: attendanceCard.created_at,
+    phase: attendanceCard.current_phase?.name || '',
+    phaseSlug: phaseSlugFromCard(attendanceCard),
+    pipefyUrl: `https://app.pipefy.com/open-cards/${attendanceCard.id}`,
+    rawLinkField: fieldValue(linkField),
+    attachments,
+    hasNF: hasNotaFiscal(attachments),
+    observations: fieldValue(obsField),
+    atdClientName,
+    atdClientSource,
+    caseType,        // 'marca' | 'comercial' | ''
+    caseTypeLabel,   // 'Violação de Marca' | 'Violação Comercial' | ''
+    linkedIds,
+    linkedCards,
+  };
+}
+
+function buildRows(enrichedCards) {
+  const rows = [];
+  for (const card of enrichedCards) {
+    if (!card.linkedCards.length) {
+      // No link — still show a row with warning
+      rows.push({
+        card,
+        linked: null,
+        client: card.atdClientName || '',
+        aggressor: '',
+        productId: '',
+        productTitle: '',
+        productLink: '',
+        evidenceLink: '',
+        pipefyCardUrl: card.pipefyUrl,
+        linkedCardUrl: '',
+        missingLink: true,
+        groupKey: card.id,
+        groupSize: 1,
+        groupIndex: 0,
+      });
+      continue;
+    }
+    const groupSize = card.linkedCards.length;
+    card.linkedCards.forEach((linked, idx) => {
+      if (linked._notFound) {
+        rows.push({
+          card,
+          linked: null,
+          client: card.atdClientName || '',
+          aggressor: '',
+          productId: '',
+          productTitle: '',
+          productLink: '',
+          evidenceLink: '',
+          pipefyCardUrl: card.pipefyUrl,
+          linkedCardUrl: `https://app.pipefy.com/open-cards/${linked.id}`,
+          missingLink: true,
+          groupKey: card.id,
+          groupSize,
+          groupIndex: idx,
+        });
+        return;
+      }
+      const f = linked.fields || [];
+      // Cliente: tenta campo do card de Violação; se ID cru ou vazio, usa o já resolvido do Atendimento
+      const clientFromLinked = fieldValue(findField(f, CONFIG.CLIENT_FIELD_NAMES, CONFIG.CLIENT_NAME_INTERNAL_ID));
+      const clientName = (clientFromLinked && !isBareId(clientFromLinked))
+        ? clientFromLinked
+        : (card.atdClientName || '');
+      const aggressorPrimary = fieldValue(findField(f, CONFIG.AGGRESSOR_PRIMARY_FIELD_NAMES));
+      const aggressorSecondary = fieldValue(findField(f, CONFIG.AGGRESSOR_SECONDARY_FIELD_NAMES));
+      // Nome do Agressor: "perfil (nome social)" quando há ambos
+      let aggressor = aggressorPrimary || aggressorSecondary || '';
+      if (aggressorPrimary && aggressorSecondary && aggressorPrimary !== aggressorSecondary) {
+        aggressor = `${aggressorPrimary} (${aggressorSecondary})`;
+      }
+      const productId = fieldValue(findField(f, CONFIG.PRODUCT_ID_FIELD_NAMES));
+      const productTitle = fieldValue(findField(f, CONFIG.PRODUCT_TITLE_FIELD_NAMES));
+      const productLink = fieldValue(findField(f, CONFIG.PRODUCT_LINK_FIELD_NAMES));
+      const evidenceLink = fieldValue(findField(f, CONFIG.EVIDENCE_FIELD_NAMES));
+      const violationType = fieldValue(findField(f, CONFIG.VIOLATION_TYPE_FIELD_NAMES));
+      const platform = fieldValue(findField(f, CONFIG.PLATFORM_FIELD_NAMES));
+      rows.push({
+        card,
+        linked,
+        client: clientName,
+        aggressor,
+        productId,
+        productTitle,
+        productLink,
+        evidenceLink,
+        violationType,
+        platform,
+        pipefyCardUrl: card.pipefyUrl,
+        linkedCardUrl: linked.url || `https://app.pipefy.com/open-cards/${linked.id}`,
+        missingLink: false,
+        groupKey: card.id,
+        groupSize,
+        groupIndex: idx,
+      });
+    });
+  }
+  return rows;
+}
+
+/* ============================================================================
+   RENDER
+   ============================================================================ */
+
+function renderMetrics() {
+  const total = state.cards.length;
+  const withNF = state.cards.filter(c => c.hasNF).length;
+  const withoutNF = total - withNF;
+  const pctWith = total ? (withNF / total) * 100 : 0;
+  const pctWithout = total ? (withoutNF / total) * 100 : 0;
+  const byPhase = { backlog: 0, standby: 0, doing: 0, enviado: 0 };
+  state.cards.forEach(c => { if (byPhase[c.phaseSlug] != null) byPhase[c.phaseSlug]++; });
+
+  $('m-total').textContent = total;
+  $('m-total-hint').textContent = total ? `${state.rows.length} linha(s) na tabela` : 'Aguardando dados';
+  $('m-nf').textContent = withNF;
+  $('m-nf-hint').textContent = total ? `${pctWith.toFixed(1)}% do total` : '0% do total';
+  if ($('m-nf-bar')) $('m-nf-bar').style.width = pctWith + '%';
+  $('m-no-nf').textContent = withoutNF;
+  $('m-no-nf-hint').textContent = total ? `${pctWithout.toFixed(1)}% do total` : '0% do total';
+  if ($('m-no-nf-bar')) $('m-no-nf-bar').style.width = pctWithout + '%';
+  $('m-backlog').textContent = byPhase.backlog;
+  $('m-standby').textContent = byPhase.standby;
+  $('m-doing').textContent = byPhase.doing;
+  $('m-enviado').textContent = byPhase.enviado;
+  // Barra horizontal proporcional
+  const phaseSum = byPhase.backlog + byPhase.standby + byPhase.doing + byPhase.enviado;
+  const pct = (n) => phaseSum ? (n / phaseSum) * 100 : 0;
+  if ($('m-bar-backlog')) $('m-bar-backlog').style.width = pct(byPhase.backlog) + '%';
+  if ($('m-bar-standby')) $('m-bar-standby').style.width = pct(byPhase.standby) + '%';
+  if ($('m-bar-doing'))   $('m-bar-doing').style.width   = pct(byPhase.doing) + '%';
+  if ($('m-bar-enviado')) $('m-bar-enviado').style.width = pct(byPhase.enviado) + '%';
+}
+
+function getFilteredRows() {
+  const { phase, nf, search } = state.filters;
+  const q = normStr(search);
+  return state.rows.filter(r => {
+    if (phase !== 'all' && r.card.phaseSlug !== phase) return false;
+    if (nf === 'with' && !r.card.hasNF) return false;
+    if (nf === 'without' && r.card.hasNF) return false;
+    if (q) {
+      const hay = normStr([r.client, r.aggressor, r.productTitle, r.productId, r.card.title].join(' '));
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function renderTable() {
+  const tbody = $('tableBody');
+  const rows = getFilteredRows();
+  $('visibleCount').textContent = rows.length;
+  $('totalCount').textContent = state.rows.length;
+  $('footerCount').textContent = state.cards.length;
+  $('footerRows').textContent = state.rows.length;
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-state">
+      <div class="icon">📭</div>
+      <h3>${state.cards.length ? 'Nenhuma linha corresponde aos filtros' : 'Nenhum caso carregado'}</h3>
+      <p>${state.cards.length ? 'Ajuste os filtros ou a busca para ver resultados.' : 'Clique em "Carregar / Atualizar" para buscar os dados.'}</p>
+    </td></tr>`;
+    return;
+  }
+
+  const html = rows.map((r, i) => rowHtml(r, i)).join('');
+  tbody.innerHTML = html;
+
+  // attach row actions — agora só Mover + kebab (demais ações no popover do kebab)
+  tbody.querySelectorAll('button[data-action="attach"]').forEach(btn => {
+    btn.addEventListener('click', () => openAttachModal(parseInt(btn.dataset.rowIdx)));
+  });
+  tbody.querySelectorAll('button[data-action="move"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      movePopover.open(btn, parseInt(btn.dataset.rowIdx));
+    });
+  });
+  tbody.querySelectorAll('button[data-action="kebab"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      actionsPopover.open(btn, parseInt(btn.dataset.rowIdx));
+    });
+  });
+
+  // store current filtered rows for action handlers
+  state._filteredRows = rows;
+}
+
+function rowHtml(r, idx) {
+  let groupCls = '';
+  if (r.groupSize > 1) {
+    if (r.groupIndex === 0) groupCls = 'group-first';
+    else if (r.groupIndex === r.groupSize - 1) groupCls = 'group-last';
+    else groupCls = 'group-middle';
+  }
+  const phaseS = r.card.phaseSlug;
+  const phaseCls = `phase-${phaseS}`;
+  const phaseText = {
+    backlog: 'Backlog / Pedidos', standby: 'StandBy', doing: 'Doing', enviado: 'Enviado p/ Cliente'
+  }[phaseS] || r.card.phase;
+
+  const attCount = r.card.attachments.length;
+  const showClient = r.groupIndex === 0;
+  const showAggressor = r.groupIndex === 0 || !r.aggressor;
+  // Sub-rótulo só aparece na primeira linha do grupo e só quando veio de fallback não-óbvio
+  const showSubtag = showClient && ['titulo','campanha'].includes(r.card.atdClientSource || '') &&
+                     (!r.linked || !fieldValue(findField(r.linked.fields || [], CONFIG.CLIENT_FIELD_NAMES, CONFIG.CLIENT_NAME_INTERNAL_ID)));
+  const sourceLabel = { titulo: 'via título', campanha: 'via Campanha' }[r.card.atdClientSource] || '';
+  const clientSubtag = showSubtag && sourceLabel
+    ? `<div class="client-source">${escapeHtml(sourceLabel)}</div>`
+    : '';
+  const clientName = r.client
+    ? (showClient
+        ? `<span class="client-name">${escapeHtml(r.client)}</span>`
+        : `<span class="muted-dup">${escapeHtml(r.client)}</span>`)
+    : '<span class="cell-warn tooltip" data-tooltip="Cliente não encontrado">⚠ sem cliente</span>';
+  // Ícone de histórico: só na primeira linha do grupo, se houver registro de auditoria
+  let historyIcon = '';
+  if (showClient) {
+    const lastAction = getCardLastAction(r.card.id);
+    if (lastAction) {
+      const tip = `Última alteração: ${escapeHtml(lastAction.actionLabel)} · por ${escapeHtml(lastAction.user)} em ${escapeHtml(lastAction.timestampLocal)}`;
+      historyIcon = `<span class="row-history-icon tooltip" data-tooltip="${tip}">i</span>`;
+    }
+  }
+  // Chip de tipo de caso (Violação de Marca | Comercial) — só na primeira linha do grupo
+  let caseTypeChip = '';
+  if (showClient && r.card.caseType) {
+    const labelShort = r.card.caseType === 'marca' ? 'MARCA' : 'COMERCIAL';
+    caseTypeChip = `<span class="case-type-chip case-type-${r.card.caseType} tooltip" data-tooltip="${escapeHtml(r.card.caseTypeLabel)}">${labelShort}</span>`;
+  }
+  const clientCellContent = `<div class="client-row">${caseTypeChip}${clientName}${historyIcon}</div>${clientSubtag}`;
+
+  const typeBadge = r.violationType
+    ? `<span class="type-violation-badge" title="Tipo de Violação">${escapeHtml(r.violationType)}</span>`
+    : '';
+  const platformBadge = r.platform
+    ? `<span class="platform-badge" title="Plataforma">${escapeHtml(r.platform)}</span>`
+    : '';
+  const aggressorText = r.aggressor
+    ? (showAggressor
+        ? `<span class="agressor-link">${escapeHtml(r.aggressor)}</span>`
+        : `<span class="muted-dup">${escapeHtml(r.aggressor)}</span>`)
+    : (r.missingLink ? '<span class="cell-empty">—</span>' : '<span class="cell-warn">⚠</span>');
+  const aggressorCell = `<div>${aggressorText}</div>${typeBadge || platformBadge ? `<div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap">${typeBadge}${platformBadge}</div>` : ''}`;
+
+  const productIdCell = r.productId ? `<span class="mono" style="font-size:11.5px;color:var(--accent-2)">${escapeHtml(r.productId)}</span>` : '<span class="cell-empty">—</span>';
+  const productTitleCell = r.productTitle ? escapeHtml(truncate(r.productTitle, 80)) : '<span class="cell-empty">—</span>';
+
+  // Links unificados: 2 ícones lado a lado (Produto + Evidência)
+  const productLinkUrl = r.productLink || r.linkedCardUrl || '';
+  const evidenceLinkUrl = r.evidenceLink || '';
+  const linkProdHtml = productLinkUrl
+    ? `<a href="${escapeHtml(productLinkUrl)}" target="_blank" rel="noopener" class="link-icon tooltip" data-tooltip="Link do produto: ${escapeHtml(productLinkUrl)}">🔗</a>`
+    : `<span class="link-icon disabled tooltip" data-tooltip="Sem link do produto">🔗</span>`;
+  const linkEvidHtml = evidenceLinkUrl
+    ? `<a href="${escapeHtml(evidenceLinkUrl)}" target="_blank" rel="noopener" class="link-icon tooltip" data-tooltip="Evidência: ${escapeHtml(evidenceLinkUrl)}">📷</a>`
+    : `<span class="link-icon disabled tooltip" data-tooltip="Sem evidência">📷</span>`;
+  const linksCell = `<div class="links-group">${linkProdHtml}${linkEvidHtml}</div>`;
+
+  const nfBadge = r.card.hasNF
+    ? `<span class="badge with-nf"><span class="badge-dot"></span>Com NF</span>`
+    : `<span class="badge no-nf"><span class="badge-dot"></span>Sem NF</span>`;
+
+  const warningBadge = r.missingLink
+    ? `<span class="warning-icon tooltip" data-tooltip="Link do card de Violação não encontrado ou inválido">⚠️</span>`
+    : '';
+
+  const createdAtTooltip = `Criado em ${formatShortDate(r.card.createdAt)}`;
+  return `<tr class="${groupCls}" title="${escapeHtml(createdAtTooltip)}">
+    <td>${clientCellContent} ${warningBadge}</td>
+    <td>${aggressorCell}</td>
+    <td>${productIdCell}</td>
+    <td class="product-title">${productTitleCell}</td>
+    <td>${linksCell}</td>
+    <td><span class="phase-badge ${phaseCls}">${escapeHtml(phaseText)}</span></td>
+    <td>${nfBadge}</td>
+    <td>
+      <button class="action-btn tooltip" data-action="attach" data-row-idx="${idx}" data-tooltip="${attCount} anexo(s)" ${attCount ? `data-count="${attCount}"` : ''}>📎</button>
+    </td>
+    <td>
+      <div class="actions">
+        <button class="btn-move" data-action="move" data-row-idx="${idx}">
+          Mover<span class="caret">▾</span>
+        </button>
+        <button class="kebab-btn tooltip" data-action="kebab" data-row-idx="${idx}" data-tooltip="Mais ações" aria-label="Mais ações">
+          <span class="kebab-dots">⋯</span>
+        </button>
+      </div>
+    </td>
+  </tr>`;
+}
+
+function showSkeleton(n = 8) {
+  const tbody = $('tableBody');
+  const rows = [];
+  for (let i = 0; i < n; i++) {
+    rows.push(`<tr class="skeleton-row">${
+      Array.from({length: 9}).map(() => `<td><div class="skeleton-bar" style="width:${60 + Math.random()*30}%"></div></td>`).join('')
+    }</tr>`);
+  }
+  tbody.innerHTML = rows.join('');
+}
+
+/* ============================================================================
+   USER CHIP + AUDIT MODAL RENDERING
+   ============================================================================ */
+function getAvatarInitials(name, email) {
+  const src = (name || email || '').trim();
+  if (!src) return '?';
+  const parts = src.replace(/@.*$/, '').split(/[\s.\-_+]+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return src.slice(0, 2).toUpperCase();
+}
+
+function renderUserChip() {
+  const u = state.user;
+  const avatar = $('userAvatar');
+  const nameEl = $('userName');
+  const chipBtn = $('userChip');
+  if (!u || !u.email) {
+    if (avatar) { avatar.textContent = '?'; avatar.classList.add('anon'); }
+    if (nameEl) nameEl.textContent = 'Identificar';
+    if (chipBtn) chipBtn.dataset.tooltip = 'Token não decodificado — clique para configurar';
+    return;
+  }
+  if (avatar) { avatar.classList.remove('anon'); avatar.textContent = getAvatarInitials(u.name, u.email); }
+  if (nameEl) nameEl.textContent = u.name;
+  // E-mail vai para o tooltip do chip (não é mais exibido inline)
+  if (chipBtn) chipBtn.dataset.tooltip = `${u.name}\n${u.email}\n(clique para ajustar nome de exibição)`;
+}
+
+function updateAuditBadge() {
+  const badge = $('auditBadge');
+  const n = state.auditLog.length;
+  if (n > 0) {
+    badge.style.display = 'inline-flex';
+    badge.textContent = n > 999 ? '999+' : String(n);
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function openAuditModal() {
+  renderAuditTable();
+  $('auditModal').classList.add('visible');
+}
+function closeAuditModal() { $('auditModal').classList.remove('visible'); }
+
+function renderAuditTable() {
+  const tbody = $('auditTableBody');
+  const q = normStr(state.auditFilters.search);
+  const filterAction = state.auditFilters.action;
+  // Mais recente primeiro
+  const entries = [...state.auditLog].reverse().filter(e => {
+    if (filterAction !== 'all' && e.action !== filterAction) return false;
+    if (q) {
+      const hay = normStr([e.user, e.userEmail, e.cardId, e.cardTitle, e.actionLabel, e.fromPhase, e.toPhase].join(' '));
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  $('auditTotalCount').textContent = state.auditLog.length;
+  if (!entries.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:40px;text-align:center;color:var(--text-2)">Nenhum registro ${state.auditLog.length ? 'corresponde aos filtros' : 'ainda — as ações aparecem aqui assim que acontecem'}.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = entries.map(e => {
+    const actionCls = e.action === 'move' ? 'audit-action-move'
+                    : e.action === 'cobranca' ? 'audit-action-cobranca'
+                    : e.action === 'encerramento' ? 'audit-action-encerramento'
+                    : 'audit-action-email';
+    const statusHtml = e.success
+      ? `<span class="audit-status-ok">✓ ok</span>`
+      : `<span class="audit-status-err tooltip" data-tooltip="${escapeHtml(e.error || 'erro')}">✗ falha</span>`;
+    const cardHtml = e.cardId
+      ? `<a href="https://app.pipefy.com/open-cards/${escapeHtml(e.cardId)}" target="_blank" rel="noopener" style="color:var(--accent-2);text-decoration:none">#${escapeHtml(e.cardId)}</a>${e.cardTitle ? `<div style="color:var(--text-3);font-size:10.5px;margin-top:2px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(e.cardTitle)}</div>` : ''}`
+      : '<span class="cell-empty">—</span>';
+    const phaseHtml = e.fromPhase || e.toPhase
+      ? `<span style="color:var(--text-2)">${escapeHtml(e.fromPhase || '—')}</span> <span style="color:var(--text-3)">→</span> <span style="color:var(--accent-2);font-weight:600">${escapeHtml(e.toPhase || '—')}</span>`
+      : '<span class="cell-empty">—</span>';
+    return `<tr>
+      <td style="white-space:nowrap;color:var(--text-2);font-size:11.5px">${escapeHtml(e.timestampLocal)}</td>
+      <td>
+        <div class="audit-user-cell">
+          <span class="avatar-mini">${escapeHtml(getAvatarInitials(e.user, e.userEmail))}</span>
+          <div>
+            <div style="font-weight:600;color:var(--text-0)">${escapeHtml(e.user)}</div>
+            <div style="color:var(--text-3);font-size:10px">${escapeHtml(e.userEmail || '—')}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="audit-action-chip ${actionCls}">${escapeHtml(e.actionLabel)}</span></td>
+      <td>${cardHtml}</td>
+      <td>${phaseHtml}</td>
+      <td>${statusHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+function exportAuditCsv() {
+  if (!state.auditLog.length) {
+    showCopyFeedback('⚠ Nenhum registro para exportar');
+    return;
+  }
+  const headers = ['Timestamp ISO','Timestamp Brasília','Usuário','E-mail','Fonte identidade','Ação','Rótulo da ação','Card ID','Título','Fase origem','Fase destino','Sucesso','Erro','Detalhes'];
+  const escapeCsv = v => {
+    if (v == null) return '';
+    const s = String(v);
+    return /["\n,;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const rows = state.auditLog.map(e => [
+    e.timestamp, e.timestampLocal, e.user, e.userEmail, e.userSource,
+    e.action, e.actionLabel, e.cardId, e.cardTitle,
+    e.fromPhase, e.toPhase, e.success ? 'sim' : 'não', e.error, e.details
+  ].map(escapeCsv).join(','));
+  const csv = '\ufeff' + [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `audit-painel-violacao-${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showCopyFeedback(`✓ ${state.auditLog.length} registros exportados`);
+}
+
+function clearAuditLog() {
+  if (!confirm(`Limpar ${state.auditLog.length} registros de auditoria? Essa ação não pode ser desfeita.`)) return;
+  state.auditLog = [];
+  persistAuditLog();
+  updateAuditBadge();
+  renderAuditTable();
+  showCopyFeedback('Logs limpos');
+}
+
+/* --- User override modal --- */
+function openUserModal() {
+  $('userModalEmail').value = state.user.email || '(não detectado no token)';
+  $('userModalName').value = state.user.source === 'manual-name' ? state.user.name : (state.user.name || '');
+  $('userModal').classList.add('visible');
+  setTimeout(() => $('userModalName').focus(), 50);
+}
+function closeUserModal() { $('userModal').classList.remove('visible'); }
+
+/* ============================================================================
+   EMAIL GENERATION
+   ============================================================================ */
+
+function buildProductBlocksFromCard(card, row) {
+  // Monta blocos de produto usando fallbacks robustos quando campos padrão não existem
+  const products = [];
+  const aggressors = new Set();
+
+  for (const linked of (card.linkedCards || [])) {
+    if (!linked || linked._notFound) continue;
+    const f = linked.fields || [];
+
+    // Agressor (VENDEDOR + NOME_SOCIAL_PLATAFORMA)
+    const aggPrim = fieldValue(findField(f, CONFIG.AGGRESSOR_PRIMARY_FIELD_NAMES));
+    const aggSec = fieldValue(findField(f, CONFIG.AGGRESSOR_SECONDARY_FIELD_NAMES));
+    let agg = aggPrim || aggSec || '';
+    if (aggPrim && aggSec && aggPrim !== aggSec) agg = `${aggPrim} (${aggSec})`;
+    if (agg) aggressors.add(agg);
+
+    // ID do produto → ID do card como fallback (não mente: é o ID do caso no Pipefy)
+    const pid = fieldValue(findField(f, CONFIG.PRODUCT_ID_FIELD_NAMES)) || linked.id || '';
+
+    // Título do produto → título do card vinculado → agressor → tipo de violação
+    const violationType = fieldValue(findField(f, CONFIG.VIOLATION_TYPE_FIELD_NAMES));
+    const platform = fieldValue(findField(f, CONFIG.PLATFORM_FIELD_NAMES));
+    let ptitle = fieldValue(findField(f, CONFIG.PRODUCT_TITLE_FIELD_NAMES));
+    if (!ptitle) {
+      const parts = [];
+      if (agg) parts.push(agg);
+      if (violationType) parts.push(violationType);
+      if (platform) parts.push(platform);
+      ptitle = parts.join(' · ') || (linked.title || `Caso #${linked.id}`);
+    }
+
+    // Link do produto → link da evidência → URL do card no Pipefy
+    const plinkFromField = fieldValue(findField(f, CONFIG.PRODUCT_LINK_FIELD_NAMES));
+    const evidFromField = fieldValue(findField(f, CONFIG.EVIDENCE_FIELD_NAMES));
+    const cardUrl = linked.url || `https://app.pipefy.com/open-cards/${linked.id}`;
+    const plink = plinkFromField || evidFromField || cardUrl;
+
+    // Evidência → campo evidência → link de produto → URL do card
+    const evid = evidFromField || plinkFromField || cardUrl;
+
+    products.push({ id: pid, title: ptitle, link: plink, evidence: evid, aggressor: agg });
+  }
+
+  // Fallback: nenhum linked card carregado — usa dados da própria linha
+  if (!products.length) {
+    products.push({
+      id: row.productId || row.card.id || '—',
+      title: row.productTitle || row.aggressor || row.card.title || `Caso #${row.card.id}`,
+      link: row.productLink || row.evidenceLink || row.pipefyCardUrl || '—',
+      evidence: row.evidenceLink || row.productLink || row.pipefyCardUrl || '—',
+      aggressor: row.aggressor || '',
+    });
+    if (row.aggressor) aggressors.add(row.aggressor);
+  }
+
+  return { products, aggressors: Array.from(aggressors) };
+}
+
+function generateEmail(row) {
+  const card = row.card;
+  const cliente = row.client || card.atdClientName || '[Cliente]';
+
+  const { products } = buildProductBlocksFromCard(card, row);
+
+  // Detecta plataformas pelas URLs dos cards vinculados (assunto dinâmico)
+  const platforms = detectPlatformsForCard(card);
+  const platformLabel = formatPlatformList(platforms) || 'Marketplace';
+
+  // Bloco de produto novo: Seller é o primeiro campo, depois ID/Título/Link/Evidência
+  const blocksTxt = products.map(p => [
+    `Seller: ${p.aggressor || '—'}`,
+    `ID do produto: ${p.id || '—'}`,
+    `Título do produto: ${p.title || '—'}`,
+    `Link do produto: ${p.link || '—'}`,
+    `Evidência: ${p.evidence || '—'}`,
+  ].join('\n')).join('\n\n');
+
+  const subject = `Retorno denúncia ${platformLabel} ${todayFull()} - ${cliente} | Branddi`;
+  const greeting = getHourGreeting();
+
+  // Encerramento padrão (igual nos dois modelos)
+  const closingTxt = [
+    'Encaminho em anexo a contestação apresentada pelo seller.',
+    'Fico no aguardo do retorno de vocês e sigo à disposição para quaisquer esclarecimentos.',
+    'Abraços,'
+  ].join('\n');
+
+  let body;
+  if (card.hasNF) {
+    // MODELO B — Com Nota Fiscal
+    body = [
+      `${greeting}, pessoal! Tudo bem?`,
+      '',
+      'Informamos que, após a denúncia por violação de marca, o seller apresentou uma documentação fiscal para tentar justificar a procedência do produto.',
+      '',
+      'Precisamos que o setor responsável analise se o documento é válido para procedermos ou não com a manutenção da denúncia em até 3 dias.',
+      '',
+      'Segue abaixo os detalhes para análise:',
+      '',
+      blocksTxt,
+      '',
+      closingTxt,
+    ].join('\n');
+  } else {
+    // MODELO A — Sem Nota Fiscal
+    body = [
+      `${greeting}, pessoal! Tudo bem?`,
+      '',
+      'Após efetuarmos algumas denúncias por violação de marca, recebemos o retorno de sellers que não apresentaram a devida documentação fiscal.',
+      '',
+      'Dessa forma, gostaríamos de confirmar se mantemos ou não a denúncia. Destaco que, caso não haja confirmação em até 3 dias, as denúncias serão automaticamente removidas pela plataforma.',
+      '',
+      'Segue abaixo os detalhes do(s) anúncio(s) para análise:',
+      '',
+      blocksTxt,
+      '',
+      closingTxt,
+    ].join('\n');
+  }
+  return { subject, body };
+}
+
+/* ============================================================================
+   ACTIONS POPOVER — menu kebab "⋯" com ações secundárias
+   ============================================================================ */
+const actionsPopover = {
+  el: null,
+  currentBtn: null,
+  init() {
+    this.el = $('popoverAcoes');
+    document.addEventListener('click', (e) => {
+      if (!this.el.classList.contains('visible')) return;
+      if (this.el.contains(e.target)) return;
+      if (e.target.closest('[data-action="kebab"]')) return;
+      this.close();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.el.classList.contains('visible')) this.close();
+    });
+    window.addEventListener('scroll', () => this.close(), true);
+    window.addEventListener('resize', () => this.close());
+  },
+  open(btn, rowIdx) {
+    const rows = state._filteredRows || [];
+    const row = rows[rowIdx];
+    if (!row) return;
+    const card = row.card;
+
+    // Configura cada item:
+    // 1) Abrir card no Pipefy
+    $('apItemOpen').href = card.pipefyUrl || '#';
+    $('apItemOpen').onclick = () => this.close();
+
+    // 2) Gerar e-mail
+    $('apEmailCount').textContent = `${row.groupSize} produto${row.groupSize > 1 ? 's' : ''}`;
+    $('apItemEmail').onclick = () => { this.close(); openEmailModal(rowIdx); };
+
+    // 3) Cobrança — só habilita se phase = enviado
+    const isEnviado = card.phaseSlug === 'enviado';
+    $('apItemCobranca').classList.toggle('disabled', !isEnviado);
+    $('apItemCobranca').disabled = !isEnviado;
+    $('apCobrancaMeta').textContent = isEnviado ? 'Disponível' : 'Só na fase Enviado';
+    $('apItemCobranca').onclick = () => {
+      if (!isEnviado) return;
+      this.close();
+      cobrancaModal.open(rowIdx);
+    };
+
+    // 4) Anexos
+    const attCount = card.attachments?.length || 0;
+    $('apAttachCount').textContent = `${attCount} arquivo${attCount !== 1 ? 's' : ''}`;
+    $('apItemAttach').classList.toggle('disabled', attCount === 0);
+    $('apItemAttach').disabled = attCount === 0;
+    $('apItemAttach').onclick = () => {
+      if (attCount === 0) return;
+      this.close();
+      openAttachModal(rowIdx);
+    };
+
+    // Posiciona ao lado do botão
+    this.position(btn);
+    this.el.classList.add('visible');
+    this.currentBtn = btn;
+    btn.classList.add('active');
+  },
+  position(btn) {
+    const rect = btn.getBoundingClientRect();
+    const popW = 240;
+    const popH = 220;
+    let left = rect.right - popW;
+    let top = rect.bottom + 6;
+    if (left < 10) left = 10;
+    if (left + popW > window.innerWidth - 10) left = window.innerWidth - popW - 10;
+    if (top + popH > window.innerHeight - 10) top = rect.top - popH - 6;
+    this.el.style.left = left + 'px';
+    this.el.style.top = top + 'px';
+  },
+  close() {
+    this.el.classList.remove('visible');
+    if (this.currentBtn) this.currentBtn.classList.remove('active');
+    this.currentBtn = null;
+  },
+};
+
+/* ============================================================================
+   COBRANÇA MANUAL — botão na linha (somente fase Enviado)
+   ============================================================================ */
+function buildCobrancaSubject(card) {
+  // Mesmo formato do assunto do e-mail: "Retorno denúncia [Plataforma] DD/MM/AAAA - [Cliente] | Branddi"
+  const cliente = card.atdClientName || '[Cliente]';
+  const platforms = detectPlatformsForCard(card);
+  const platformLabel = formatPlatformList(platforms) || 'Marketplace';
+  return `Retorno denúncia ${platformLabel} ${todayFull()} - ${cliente} | Branddi`;
+}
+
+function buildCobrancaCommentText(card) {
+  const ts = brasiliaTimestamp();
+  const userLabel = state.user.name || state.user.email || 'Usuário anônimo';
+  const subject = buildCobrancaSubject(card);
+  const lines = [
+    `Em ${ts.date}, realizamos cobrança de retorno ao cliente e seguimos aguardando o direcionamento. (Registrado por ${userLabel})`,
+    '',
+    `Assunto: ${subject}`,
+  ];
+  return appendCardLink(lines.join('\n'), card.id);
+}
+
+const cobrancaModal = {
+  current: null,
+  open(rowIdx) {
+    const rows = state._filteredRows || [];
+    const row = rows[rowIdx];
+    if (!row) return;
+    this.current = row;
+    const card = row.card;
+    const linkedCount = (card.linkedCards || []).filter(l => l && !l._notFound).length;
+    $('cobrancaClient').textContent = card.atdClientName || row.client || '—';
+    $('cobrancaCardCount').textContent = `1 Atendimento + ${linkedCount} Violação = ${1 + linkedCount} comentário(s)`;
+    $('cobrancaPreview').value = buildCobrancaCommentText(card);
+    const newDue = addBusinessDays(3);
+    $('cobrancaNewDueDate').textContent = formatDateBr(newDue);
+    $('modalCobranca').classList.add('visible');
+  },
+  close() { $('modalCobranca').classList.remove('visible'); this.current = null; },
+  async confirm() {
+    if (!this.current) return;
+    const row = this.current;
+    const card = row.card;
+    const btn = $('cobrancaConfirmBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="btn-icon spinning">⟳</span><span>Postando…</span>';
+
+    const text = buildCobrancaCommentText(card);
+    const linkedCards = (card.linkedCards || []).filter(l => l && !l._notFound && l.id);
+    let postedCount = 0;
+    let failedCount = 0;
+
+    try {
+      // 1) Comentário no Atendimento
+      try {
+        await gql(CREATE_COMMENT_MUTATION, { cardId: String(card.id), text });
+        postedCount++;
+      } catch (e) { failedCount++; console.warn('[cobranca] falha no Atendimento:', e.message); }
+
+      // 2) Comentários nos cards de Violação (todos, em paralelo)
+      const results = await Promise.allSettled(
+        linkedCards.map(linked => gql(CREATE_COMMENT_MUTATION, { cardId: String(linked.id), text }))
+      );
+      results.forEach(r => r.status === 'fulfilled' ? postedCount++ : failedCount++);
+
+      // 3) Atualiza vencimento do Atendimento para hoje + 3 dias úteis
+      const newDue = addBusinessDays(3);
+      const dueIso = dateToBrasiliaIso(newDue);
+      let dueOk = false;
+      try { await setCardDueDate(card.id, dueIso); dueOk = true; }
+      catch (e) { console.warn('[cobranca] falha ao atualizar due_date:', e.message); }
+
+      // 4) Audit log
+      recordAudit({
+        action: 'cobranca',
+        actionLabel: `Cobrança manual (+ ${postedCount} coment.${dueOk ? ' + venc.' : ''})`,
+        cardId: card.id,
+        cardTitle: card.title || '',
+        fromPhase: card.phase,
+        toPhase: '',
+        details: `Postado em ${postedCount} cards${failedCount ? ` · ${failedCount} falhas` : ''}${dueOk ? ` · Novo vencimento: ${formatDateBr(newDue)}` : ''}`,
+        success: failedCount === 0,
+        error: failedCount ? `${failedCount} comentário(s) falharam` : '',
+      });
+
+      this.close();
+      const summary = failedCount === 0
+        ? `✓ Cobrança registrada em ${postedCount} card(s)`
+        : `⚠ ${postedCount} ok, ${failedCount} falha(s)`;
+      showCopyFeedback(summary);
+    } catch (err) {
+      console.error('[cobranca] erro inesperado:', err);
+      showCopyFeedback('⚠ Erro: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<span>🔔</span><span>Confirmar e postar cobrança</span>';
+    }
+  },
+};
+
+/* ============================================================================
+   ENCERRAMENTO — modal com escopo (todos / apenas este) + motivo (3 opções)
+   ============================================================================ */
+const CLOSE_REASON_TEMPLATES = {
+  retirar:    'Cliente retornou solicitando a retirada da denúncia. Task aberta e orientação já repassada para que a devida ação seja tomada. Portanto, concluindo a tarefa pelo lado de atendimento.',
+  manter:     'Cliente retornou solicitando que mantivéssemos a denúncia. Task aberta e orientação já repassada para que a devida ação seja tomada. Portanto, concluindo a tarefa pelo lado de atendimento.',
+  semretorno: 'Não obtivemos retorno do cliente dentro do prazo de três dias, conforme estabelecido pelo procedimento padrão do BPP. Portanto, concluindo a tarefa pelo lado de atendimento.',
+};
+const CLOSE_REASON_LABELS = {
+  retirar: 'Retirar denúncia',
+  manter: 'Manter denúncia',
+  semretorno: 'Sem retorno',
+};
+
+function buildCloseCommentText(card) {
+  const reasonEl = document.querySelector('input[name="closeReason"]:checked');
+  const reason = reasonEl ? reasonEl.value : 'retirar';
+  const baseText = CLOSE_REASON_TEMPLATES[reason] || CLOSE_REASON_TEMPLATES.retirar;
+  return appendCardLink(baseText, card.id);
+}
+
+const closeModal = {
+  current: null,
+  open(rowIdx) {
+    const rows = state._filteredRows || [];
+    const row = rows[rowIdx];
+    if (!row) return;
+    this.current = row;
+    const card = row.card;
+    const linkedCount = (card.linkedCards || []).filter(l => l && !l._notFound).length;
+    $('closeClient').textContent = card.atdClientName || row.client || '—';
+    $('closeAggressor').textContent = row.aggressor || '— (sem violação vinculada)';
+    $('closeViolationCount').textContent = `${linkedCount} card(s) de Violação`;
+    // Reset radios para defaults
+    document.querySelector('input[name="closeScope"][value="all"]').checked = true;
+    document.querySelector('input[name="closeReason"][value="retirar"]').checked = true;
+    this.refreshPreview();
+    $('modalEncerramento').classList.add('visible');
+  },
+  close() { $('modalEncerramento').classList.remove('visible'); this.current = null; },
+  refreshPreview() {
+    if (!this.current) return;
+    const row = this.current;
+    const card = row.card;
+    const scopeEl = document.querySelector('input[name="closeScope"]:checked');
+    const scope = scopeEl ? scopeEl.value : 'all';
+    const linkedCount = (card.linkedCards || []).filter(l => l && !l._notFound).length;
+    $('closePreview').value = buildCloseCommentText(card);
+
+    let summaryHtml;
+    if (scope === 'all') {
+      summaryHtml = `<strong>📋 Resumo:</strong> O Atendimento será movido para <strong>Concluídos Geral</strong>. ` +
+                    `O comentário será postado no Atendimento + ${linkedCount} card(s) de Violação. Total: <strong>${1 + linkedCount} card(s)</strong>.`;
+    } else {
+      const linkedHasId = row.linked && row.linked.id;
+      summaryHtml = `<strong>📋 Resumo:</strong> O Atendimento <strong>NÃO será movido</strong>. ` +
+                    `O comentário será postado no Atendimento` +
+                    (linkedHasId ? ` + 1 card de Violação (${row.aggressor || 'desta linha'})` : ` (sem violação vinculada nesta linha)`) +
+                    `. Total: <strong>${linkedHasId ? 2 : 1} card(s)</strong>.`;
+    }
+    $('closeSummary').innerHTML = summaryHtml;
+  },
+  async confirm() {
+    if (!this.current) return;
+    const row = this.current;
+    const card = row.card;
+    const btn = $('closeConfirmBtn');
+    const scopeEl = document.querySelector('input[name="closeScope"]:checked');
+    const reasonEl = document.querySelector('input[name="closeReason"]:checked');
+    const scope = scopeEl ? scopeEl.value : 'all';
+    const reason = reasonEl ? reasonEl.value : 'retirar';
+    const text = buildCloseCommentText(card);
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="btn-icon spinning">⟳</span><span>Encerrando…</span>';
+
+    let postedCount = 0;
+    let failedCount = 0;
+    let movedToConcluido = false;
+
+    try {
+      // 1) Comentário no Atendimento (sempre)
+      try {
+        await gql(CREATE_COMMENT_MUTATION, { cardId: String(card.id), text });
+        postedCount++;
+      } catch (e) { failedCount++; console.warn('[encerramento] falha no Atendimento:', e.message); }
+
+      // 2) Comentários nos cards de Violação — depende do escopo
+      let targetLinkedCards = [];
+      if (scope === 'all') {
+        targetLinkedCards = (card.linkedCards || []).filter(l => l && !l._notFound && l.id);
+      } else {
+        // Apenas a violação desta linha
+        if (row.linked && row.linked.id && !row.linked._notFound) {
+          targetLinkedCards = [row.linked];
+        }
+      }
+      const results = await Promise.allSettled(
+        targetLinkedCards.map(linked => gql(CREATE_COMMENT_MUTATION, { cardId: String(linked.id), text }))
+      );
+      results.forEach(r => r.status === 'fulfilled' ? postedCount++ : failedCount++);
+
+      // 3) Move o Atendimento para Concluídos Geral SOMENTE se escopo = all
+      if (scope === 'all') {
+        const concluidoTarget = CONFIG.MOVE_TARGETS.find(t => t.slug === 'concluido');
+        if (concluidoTarget) {
+          try {
+            await gql(MOVE_CARD_MUTATION, { cardId: String(card.id), phaseId: String(concluidoTarget.id) });
+            movedToConcluido = true;
+          } catch (e) {
+            console.warn('[encerramento] falha ao mover para Concluído:', e.message);
+            failedCount++;
+          }
+        }
+      }
+
+      // 4) Audit log
+      recordAudit({
+        action: 'encerramento',
+        actionLabel: `Encerrar ${scope === 'all' ? 'caso' : 'produto'} · ${CLOSE_REASON_LABELS[reason]} (+ ${postedCount} coment.${movedToConcluido ? ' + move' : ''})`,
+        cardId: card.id,
+        cardTitle: card.title || '',
+        fromPhase: card.phase,
+        toPhase: movedToConcluido ? 'Concluídos Geral' : card.phase,
+        details: `Escopo: ${scope === 'all' ? 'caso inteiro' : 'apenas esta violação'} · Motivo: ${CLOSE_REASON_LABELS[reason]}${failedCount ? ` · ${failedCount} falha(s)` : ''}`,
+        success: failedCount === 0,
+        error: failedCount ? `${failedCount} operação(ões) falharam` : '',
+      });
+
+      // 5) Atualiza estado local: se foi caso inteiro, remove o card do painel
+      if (movedToConcluido) {
+        state.cards = state.cards.filter(c => c.id !== card.id);
+        state.rows = state.rows.filter(r => r.card.id !== card.id);
+      }
+
+      this.close();
+      renderMetrics();
+      renderTable();
+
+      const summaryMsg = failedCount === 0
+        ? `✓ Encerramento ${scope === 'all' ? 'do caso' : 'do produto'} registrado em ${postedCount} card(s)`
+        : `⚠ ${postedCount} ok, ${failedCount} falha(s)`;
+      showCopyFeedback(summaryMsg);
+    } catch (err) {
+      console.error('[encerramento] erro inesperado:', err);
+      showCopyFeedback('⚠ Erro: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<span>🏁</span><span>Confirmar e encerrar</span>';
+    }
+  },
+};
+
+/* ============================================================================
+   MOVE POPOVER — controla a abertura/fechamento e dispatch da movimentação
+   ============================================================================ */
+const movePopover = {
+  el: null,
+  loading: false,
+  currentRow: null,
+  currentBtn: null,
+  init() {
+    this.el = $('popoverMover');
+    $('movePopoverClose').addEventListener('click', () => this.close());
+    this.el.querySelectorAll('.move-option').forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        const phaseId = opt.dataset.phaseId;
+        const phaseSlug = opt.dataset.phaseSlug;
+        const phaseLabel = opt.dataset.phaseLabel;
+        const withComment = opt.dataset.withComment === '1';
+        // "Concluído" abre o modal de Encerramento (com escopo + motivo) em vez de mover direto
+        if (phaseSlug === 'concluido') {
+          const row = this.currentRow;
+          const btn = this.currentBtn;
+          this.close();
+          if (btn) btn.classList.remove('active');
+          // Encontra o índice da linha em state._filteredRows
+          const idx = (state._filteredRows || []).indexOf(row);
+          if (idx >= 0) closeModal.open(idx);
+          return;
+        }
+        this.dispatch({ id: phaseId, slug: phaseSlug, label: phaseLabel, comment: withComment });
+      });
+    });
+    document.addEventListener('click', (e) => {
+      if (!this.el.classList.contains('visible')) return;
+      if (this.el.contains(e.target)) return;
+      if (e.target.closest('[data-action="move"]')) return;
+      this.close();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.el.classList.contains('visible')) this.close();
+    });
+    window.addEventListener('scroll', () => this.close(), true);
+    window.addEventListener('resize', () => this.close());
+  },
+  open(btn, rowIdx) {
+    if (this.loading) return;
+    const rows = state._filteredRows || [];
+    const row = rows[rowIdx];
+    if (!row) return;
+    this.currentRow = row;
+    this.currentBtn = btn;
+    // Reset UI
+    this.el.querySelector('.move-popover-body').style.display = '';
+    $('movePopoverLoading').style.display = 'none';
+    $('movePopoverLoadingText').textContent = 'Movendo…';
+    // Reseta também o header para o texto padrão
+    this.el.querySelector('.move-popover-header span').textContent = 'Mover card para…';
+
+    // Marca a fase atual como desabilitada
+    this.el.querySelectorAll('.move-option').forEach(opt => {
+      const isCurrent = opt.dataset.phaseSlug === row.card.phaseSlug;
+      opt.disabled = isCurrent;
+      opt.style.opacity = isCurrent ? '.4' : '1';
+      opt.style.cursor = isCurrent ? 'not-allowed' : 'pointer';
+      opt.title = isCurrent ? 'O card já está nesta fase' : '';
+    });
+
+    // Posiciona ao lado do botão
+    this.position(btn);
+    this.el.classList.add('visible');
+    btn.classList.add('active');
+  },
+  position(btn) {
+    const rect = btn.getBoundingClientRect();
+    const popW = 300;
+    const popH = 220;
+    let left = rect.right - popW;
+    let top = rect.bottom + 6;
+    // Evita sair à direita
+    if (left < 10) left = 10;
+    if (left + popW > window.innerWidth - 10) left = window.innerWidth - popW - 10;
+    // Se não cabe embaixo, exibe acima
+    if (top + popH > window.innerHeight - 10) top = rect.top - popH - 6;
+    this.el.style.left = left + 'px';
+    this.el.style.top = top + 'px';
+  },
+  close() {
+    if (this.loading) return;
+    this.el.classList.remove('visible');
+    if (this.currentBtn) this.currentBtn.classList.remove('active');
+    this.currentRow = null;
+    this.currentBtn = null;
+  },
+  async dispatch(target) {
+    if (this.loading || !this.currentRow) return;
+    const row = this.currentRow;
+    const btn = this.currentBtn;
+    const cardId = row.card.id;
+    const tr = btn.closest('tr');
+
+    this.loading = true;
+    btn.classList.add('loading');
+    if (tr) tr.classList.add('row-moving');
+    // Mostra área de loading, esconde opções
+    this.el.querySelector('.move-popover-body').style.display = 'none';
+    $('movePopoverLoading').style.display = 'flex';
+    $('movePopoverLoadingText').textContent = target.comment
+      ? `Movendo para ${target.label}… (+ comentário)`
+      : `Movendo para ${target.label}…`;
+
+    const card = row.card;
+    const fromPhase = card.phase;
+
+    // Pré-gera o assunto do e-mail para incluir no comentário dos cards de Violação
+    let emailSubject = '';
+    if (target.comment) {
+      try {
+        const generated = generateEmail(row);
+        emailSubject = generated.subject || '';
+      } catch (e) { /* segue sem assunto */ }
+    }
+
+    try {
+      const moveResult = await moveCardToPhase(cardId, {
+        id: target.id,
+        comment: target.comment,
+      }, { card, emailSubject, fromPhaseSlug: card.phaseSlug });
+      const newPhase = moveResult.newPhase;
+      const dueInfo = moveResult.dueDateUpdated;
+
+      // Registra no audit log
+      const linkedCount = (card.linkedCards || []).filter(l => l && !l._notFound).length;
+      const auditDetails = [];
+      if (target.comment) {
+        auditDetails.push(`Comentário no Atendimento + ${linkedCount} coment(s) nos cards de Violação`);
+        if (emailSubject) auditDetails.push(`Assunto: ${emailSubject}`);
+      }
+      if (dueInfo) auditDetails.push(`Vencimento setado para ${dueInfo.br} (saindo de Backlog)`);
+      recordAudit({
+        action: 'move',
+        actionLabel: target.comment
+          ? `Mover → ${target.label} (+ ${1 + linkedCount} coment.)`
+          : (dueInfo ? `Mover → ${target.label} (+ vencimento)` : `Mover → ${target.label}`),
+        cardId: cardId,
+        cardTitle: card.title || '',
+        fromPhase: fromPhase,
+        toPhase: newPhase?.name || target.label,
+        details: auditDetails.join(' · '),
+        success: true,
+      });
+
+      // Atualiza o estado local
+      card.phaseSlug = target.slug;
+      card.phase = newPhase?.name || target.label;
+
+      // Se foi para "Concluídos Geral", remove o card do estado (não é mais monitorado)
+      if (target.slug === 'concluido') {
+        state.cards = state.cards.filter(c => c.id !== card.id);
+        state.rows = state.rows.filter(r => r.card.id !== card.id);
+        // Animação de saída das linhas desse grupo
+        document.querySelectorAll(`tr`).forEach(row => {
+          // hack: as linhas não têm dataset de cardId, mas vamos usar posição
+        });
+      } else {
+        // Força rebuild dos rows a partir dos cards para reagrupar
+        state.rows = buildRows(state.cards);
+      }
+
+      // Feedback
+      const msg = target.comment
+        ? `✓ Movido para "${target.label}" + comentário criado`
+        : `✓ Movido para "${target.label}"`;
+      showCopyFeedback(msg);
+
+      // Fecha popover ANTES do re-render
+      this.loading = false;
+      btn.classList.remove('loading');
+      this.close();
+
+      // Re-render
+      renderMetrics();
+      renderTable();
+    } catch (err) {
+      console.error('[move] falha:', err);
+      // Registra a FALHA também no audit
+      recordAudit({
+        action: 'move',
+        actionLabel: `Mover → ${target.label} (FALHOU)`,
+        cardId: cardId,
+        cardTitle: card.title || '',
+        fromPhase: fromPhase,
+        toPhase: target.label,
+        success: false,
+        error: err.message || String(err),
+      });
+      this.loading = false;
+      btn.classList.remove('loading');
+      if (tr) tr.classList.remove('row-moving');
+      $('movePopoverLoading').style.display = 'none';
+      this.el.querySelector('.move-popover-body').style.display = '';
+      showCopyFeedback('⚠ ' + (err.message || 'Erro ao mover card'));
+    }
+  },
+};
+
+function openEmailModal(rowIdx) {
+  try {
+    const rows = state._filteredRows || [];
+    const row = rows[rowIdx];
+    if (!row) {
+      console.warn('[email] linha não encontrada no índice', rowIdx, 'de', rows.length);
+      showCopyFeedback('⚠ Linha não encontrada — recarregue');
+      return;
+    }
+    const { subject, body } = generateEmail(row);
+    $('emailSubject').value = subject || '';
+    $('emailBody').value = body || '';
+    state._emailModalRow = row; // Referência para o audit log no copy
+    $('emailModal').classList.add('visible');
+    // Foco no corpo para já poder copiar via Ctrl+A/Ctrl+C
+    setTimeout(() => $('emailBody').focus(), 50);
+  } catch (err) {
+    console.error('[email] erro ao gerar:', err);
+    showCopyFeedback('⚠ Erro ao gerar e-mail — veja o console');
+  }
+}
+
+function closeEmailModal() {
+  $('emailModal').classList.remove('visible');
+}
+
+function openAttachModal(rowIdx) {
+  const rows = state._filteredRows || [];
+  const row = rows[rowIdx];
+  if (!row) return;
+  const atts = row.card.attachments;
+  const list = $('attachList');
+  if (!atts.length) {
+    list.innerHTML = `<div style="color:var(--text-2);padding:12px">Nenhum anexo encontrado no card de Atendimento.</div>`;
+  } else {
+    list.innerHTML = atts.map(a => {
+      const isNF = /(nf|nota\s*fiscal)/i.test(a.name);
+      const nfTag = isNF ? '<span class="badge with-nf" style="font-size:9px;padding:1px 5px;margin-left:6px"><span class="badge-dot"></span>NF</span>' : '';
+      const srcTag = a.source ? `<span class="platform-badge" style="margin-left:6px">${escapeHtml(a.source)}</span>` : '';
+      return `
+      <div class="attach-item">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1" title="${escapeHtml(a.name)}">
+          📄 ${escapeHtml(a.name)}${nfTag}${srcTag}
+        </span>
+        <a href="${escapeHtml(a.url)}" target="_blank" rel="noopener" download>Baixar</a>
+      </div>
+    `;}).join('');
+  }
+  $('attachModal').classList.add('visible');
+}
+
+function closeAttachModal() {
+  $('attachModal').classList.remove('visible');
+}
+
+function showCopyFeedback(msg) {
+  const el = $('copyFeedback');
+  el.textContent = msg || 'Copiado!';
+  el.classList.add('visible');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('visible'), 1500);
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch(e) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.top = '-1000px';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  }
+}
+
+/* ============================================================================
+   LOAD FLOW
+   ============================================================================ */
+
+async function load() {
+  if (state.loading) return;
+  state.token = ($('tokenInput').value || '').trim();
+  if (!state.token) {
+    setStatus('error', 'Informe o token');
+    return;
+  }
+  // Persiste o token no localStorage para próximas aberturas
+  try { localStorage.setItem(CONFIG.TOKEN_STORAGE_KEY, state.token); } catch(e) {}
+  state.loading = true;
+  $('loadBtn').disabled = true;
+  $('loadBtn').classList.add('spinning');
+  setStatus('loading', 'Carregando atendimentos…');
+  $('loadProgress').classList.add('visible');
+  setProgress(0, 0, 'Conectando ao Pipefy…');
+  if (!state.cards.length) showSkeleton();
+
+  try {
+    // Step 1 — fetch cards das 4 fases de interesse (infinitamente mais rápido que paginar 18k)
+    const all = await fetchAllAttendanceCards((count, page, hasNext) => {
+      setProgress(count, count, `Buscando atendimentos ativos · ${count} cards carregados${hasNext ? '…' : ''}`);
+    });
+
+    // Step 2 — filter
+    const matching = all.filter(isAttendanceMatch);
+    setProgress(0, matching.length, `${matching.length} atendimentos correspondem. Buscando cards de Violação…`);
+
+    // Step 3 — enrich (fetch linked cards)
+    let done = 0;
+    const enriched = await mapConcurrent(matching, CONFIG.LINKED_CONCURRENCY, async (card) => {
+      const r = await enrichCard(card);
+      done++;
+      setProgress(done, matching.length, `Enriquecendo ${done}/${matching.length}…`);
+      return r;
+    });
+
+    state.cards = enriched.filter(Boolean);
+    state.rows = buildRows(state.cards);
+    state.lastUpdate = new Date();
+
+    renderMetrics();
+    renderTable();
+    setStatus('ok', `${state.cards.length} casos · atualizado às ${state.lastUpdate.toLocaleTimeString('pt-BR')}`);
+    $('footerUpdate').textContent = state.lastUpdate.toLocaleTimeString('pt-BR');
+    state.countdown = CONFIG.REFRESH_INTERVAL_SEC;
+  } catch (err) {
+    console.error(err);
+    setStatus('error', 'Erro: ' + err.message);
+    $('tableBody').innerHTML = `<tr><td colspan="9" class="empty-state">
+      <div class="icon">⚠️</div>
+      <h3>Falha ao carregar dados</h3>
+      <p>${escapeHtml(err.message)}</p>
+    </td></tr>`;
+  } finally {
+    state.loading = false;
+    $('loadBtn').disabled = false;
+    $('loadBtn').classList.remove('spinning');
+    $('loadProgress').classList.remove('visible');
+  }
+}
+
+function setStatus(kind, text) {
+  const dot = $('pulseDot');
+  dot.classList.remove('loading', 'error');
+  if (kind === 'loading') dot.classList.add('loading');
+  else if (kind === 'error') dot.classList.add('error');
+  $('refreshText').textContent = text;
+}
+
+function setProgress(done, total, label) {
+  $('progressText').textContent = label || 'Carregando…';
+  $('progressCount').textContent = total ? `${done} / ${total}` : `${done}`;
+  const pct = total ? Math.min(100, (done / total) * 100) : 8;
+  $('progressFill').style.width = pct + '%';
+}
+
+function startAutoRefresh() {
+  if (state.refreshTimer) clearInterval(state.refreshTimer);
+  if (state.countdownTimer) clearInterval(state.countdownTimer);
+
+  state.countdownTimer = setInterval(() => {
+    state.countdown--;
+    if (state.countdown <= 0) state.countdown = CONFIG.REFRESH_INTERVAL_SEC;
+    const formatted = formatCountdown(state.countdown);
+    $('countdownText').textContent = `· próximo em ${formatted}`;
+    $('footerCountdown').textContent = formatted;
+  }, 1000);
+
+  state.refreshTimer = setInterval(() => {
+    if (!state.loading && state.token) load();
+  }, CONFIG.REFRESH_INTERVAL_SEC * 1000);
+}
+
+/* ============================================================================
+   BIND UI
+   ============================================================================ */
+
+function init() {
+  // Listeners CRÍTICOS no topo — protegidos contra erros nos próximos blocos
+  try {
+    $('userChip').addEventListener('click', openUserModal);
+    $('auditBtn').addEventListener('click', openAuditModal);
+  } catch (e) { console.warn('[init] falha ao anexar listeners de userChip/auditBtn:', e); }
+
+  // Token vem SOMENTE do localStorage (cada operador cola o seu na primeira vez)
+  let savedToken = '';
+  try { savedToken = localStorage.getItem(CONFIG.TOKEN_STORAGE_KEY) || ''; } catch(e) {}
+  $('tokenInput').value = savedToken;
+  $('loadBtn').addEventListener('click', load);
+
+  // Atualiza localStorage ao editar o token manualmente
+  $('tokenInput').addEventListener('change', () => {
+    const v = $('tokenInput').value.trim();
+    try { if (v) localStorage.setItem(CONFIG.TOKEN_STORAGE_KEY, v); } catch(e) {}
+  });
+
+  // Botão ⚙ mostra/esconde o token input
+  $('settingsBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    $('tokenInput').classList.toggle('visible');
+    if ($('tokenInput').classList.contains('visible')) $('tokenInput').focus();
+  });
+  document.addEventListener('click', (e) => {
+    const inp = $('tokenInput');
+    if (!inp.classList.contains('visible')) return;
+    if (e.target === inp || e.target === $('settingsBtn')) return;
+    inp.classList.remove('visible');
+  });
+
+  // Filters
+  $$('[data-filter-phase]').forEach(btn => btn.addEventListener('click', () => {
+    $$('[data-filter-phase]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.filters.phase = btn.dataset.filterPhase;
+    renderTable();
+  }));
+  $$('[data-filter-nf]').forEach(btn => btn.addEventListener('click', () => {
+    $$('[data-filter-nf]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.filters.nf = btn.dataset.filterNf;
+    renderTable();
+  }));
+  $('searchInput').addEventListener('input', (e) => {
+    state.filters.search = e.target.value;
+    renderTable();
+  });
+
+  // Modals
+  $('modalClose').addEventListener('click', closeEmailModal);
+  $('modalCloseBtn').addEventListener('click', closeEmailModal);
+  $('emailModal').addEventListener('click', (e) => { if (e.target === $('emailModal')) closeEmailModal(); });
+  $('attachModalClose').addEventListener('click', closeAttachModal);
+  $('attachCloseBtn').addEventListener('click', closeAttachModal);
+  $('attachModal').addEventListener('click', (e) => { if (e.target === $('attachModal')) closeAttachModal(); });
+
+  const logEmailCopy = (which) => {
+    const row = state._emailModalRow;
+    if (!row) return;
+    recordAudit({
+      action: 'email-copy',
+      actionLabel: `E-mail copiado (${which})`,
+      cardId: row.card.id,
+      cardTitle: row.card.title || '',
+      fromPhase: row.card.phase,
+      toPhase: '',
+      details: `${row.groupSize} produto${row.groupSize>1?'s':''} · NF: ${row.card.hasNF ? 'sim' : 'não'}`,
+      success: true,
+    });
+  };
+  $('copySubjectBtn').addEventListener('click', async () => {
+    if (await copyText($('emailSubject').value)) { showCopyFeedback('Assunto copiado!'); logEmailCopy('assunto'); }
+  });
+  $('copyBodyBtn').addEventListener('click', async () => {
+    if (await copyText($('emailBody').value)) { showCopyFeedback('Corpo copiado!'); logEmailCopy('corpo'); }
+  });
+  $('copyAllBtn').addEventListener('click', async () => {
+    const full = `Assunto: ${$('emailSubject').value}\n\n${$('emailBody').value}`;
+    if (await copyText(full)) { showCopyFeedback('Assunto + corpo copiados!'); logEmailCopy('assunto + corpo'); }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeEmailModal(); closeAttachModal(); closeAuditModal(); closeUserModal();
+      cobrancaModal.close(); closeModal.close();
+    }
+  });
+
+  // --- Cobrança modal ---
+  $('cobrancaModalClose').addEventListener('click', () => cobrancaModal.close());
+  $('cobrancaCancelBtn').addEventListener('click', () => cobrancaModal.close());
+  $('cobrancaConfirmBtn').addEventListener('click', () => cobrancaModal.confirm());
+  $('modalCobranca').addEventListener('click', e => { if (e.target === $('modalCobranca')) cobrancaModal.close(); });
+
+  // --- Encerramento modal ---
+  $('closeModalClose').addEventListener('click', () => closeModal.close());
+  $('closeCancelBtn').addEventListener('click', () => closeModal.close());
+  $('closeConfirmBtn').addEventListener('click', () => closeModal.confirm());
+  $('modalEncerramento').addEventListener('click', e => { if (e.target === $('modalEncerramento')) closeModal.close(); });
+  document.querySelectorAll('input[name="closeScope"], input[name="closeReason"]').forEach(el => {
+    el.addEventListener('change', () => closeModal.refreshPreview());
+  });
+
+  // Inicializa popovers (listeners globais)
+  movePopover.init();
+  actionsPopover.init();
+
+  // --- Audit log init ---
+  loadAuditLog();
+  updateAuditBadge();
+
+  // --- User chip ---
+  identifyUserFromToken($('tokenInput').value);
+  renderUserChip();
+
+  // (listener de userChip já anexado no topo do init para proteção)
+  $('userModalClose').addEventListener('click', closeUserModal);
+  $('userSaveBtn').addEventListener('click', () => {
+    setUserNameOverride($('userModalName').value);
+    closeUserModal();
+    showCopyFeedback('Nome atualizado');
+  });
+  $('userResetBtn').addEventListener('click', () => {
+    setUserNameOverride('');
+    $('userModalName').value = state.user.name;
+    showCopyFeedback('Nome resetado para o do token');
+  });
+  $('userModal').addEventListener('click', e => { if (e.target === $('userModal')) closeUserModal(); });
+
+  // Re-identifica usuário quando o token muda
+  $('tokenInput').addEventListener('change', () => {
+    identifyUserFromToken($('tokenInput').value);
+    renderUserChip();
+  });
+
+  // --- Audit modal ---
+  // (listener de auditBtn já anexado no topo do init para proteção)
+  $('auditModalClose').addEventListener('click', closeAuditModal);
+  $('auditCloseBtn').addEventListener('click', closeAuditModal);
+  $('auditModal').addEventListener('click', e => { if (e.target === $('auditModal')) closeAuditModal(); });
+  $('auditSearch').addEventListener('input', e => {
+    state.auditFilters.search = e.target.value;
+    renderAuditTable();
+  });
+  document.querySelectorAll('[data-audit-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-audit-action]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.auditFilters.action = btn.dataset.auditAction;
+      renderAuditTable();
+    });
+  });
+  $('auditExportBtn').addEventListener('click', exportAuditCsv);
+  $('auditClearBtn').addEventListener('click', clearAuditLog);
+
+  // --- Unlock (painel com token compartilhado criptografado) ---
+  const doUnlock = async () => {
+    const pwd = $('unlockPasswordInput').value;
+    const errEl = $('unlockError');
+    if (!pwd) {
+      errEl.textContent = 'Digite a senha.';
+      errEl.style.display = '';
+      return;
+    }
+    const btn = $('unlockSubmitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="btn-icon spinning">⟳</span><span>Desbloqueando…</span>';
+    try {
+      const token = await decryptSharedToken(CONFIG.ENCRYPTED_TOKEN, pwd);
+      // Valida formato JWT mínimo
+      if (!token || token.split('.').length !== 3) {
+        throw new Error('Token descriptografado inválido');
+      }
+      setCachedDecryptedToken(token);
+      state.token = token;
+      $('tokenInput').value = token;
+      identifyUserFromToken(token);
+      renderUserChip();
+      hideUnlockScreen();
+      setTimeout(() => load(), 150);
+    } catch (err) {
+      console.warn('[unlock] falha:', err.message);
+      errEl.textContent = 'Senha incorreta. Tente novamente.';
+      errEl.style.display = '';
+      $('unlockPasswordInput').select();
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<span>🔓</span><span>Desbloquear painel</span>';
+    }
+  };
+  $('unlockSubmitBtn').addEventListener('click', doUnlock);
+  $('unlockPasswordInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doUnlock();
+  });
+
+  // --- Onboarding (modo sem token compartilhado) ---
+  $('onboardingSaveBtn').addEventListener('click', () => {
+    const t = $('onboardingTokenInput').value.trim();
+    if (!t) { showCopyFeedback('⚠ Cole o token antes de continuar'); return; }
+    if (t.split('.').length !== 3) { showCopyFeedback('⚠ Token inválido — deve ter 3 partes separadas por ponto'); return; }
+    try { localStorage.setItem(CONFIG.TOKEN_STORAGE_KEY, t); } catch(e) {}
+    $('tokenInput').value = t;
+    identifyUserFromToken(t);
+    renderUserChip();
+    hideOnboardingScreen();
+    setTimeout(() => load(), 150);
+  });
+  $('onboardingTokenInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') $('onboardingSaveBtn').click();
+  });
+
+  startAutoRefresh();
+
+  // Fluxo de bootstrap — 3 cenários:
+  // (A) ENCRYPTED_TOKEN definido + cache descriptografado disponível → auto-load
+  // (B) ENCRYPTED_TOKEN definido SEM cache → mostra modal de senha (unlock)
+  // (C) ENCRYPTED_TOKEN vazio → fluxo legado: cada operador cola seu token (onboarding)
+  if (CONFIG.ENCRYPTED_TOKEN) {
+    const cached = getCachedDecryptedToken();
+    if (cached) {
+      state.token = cached;
+      $('tokenInput').value = cached;
+      identifyUserFromToken(cached);
+      renderUserChip();
+      setTimeout(() => load(), 300);
+    } else {
+      showUnlockScreen();
+    }
+  } else if (state.token || $('tokenInput').value.trim()) {
+    setTimeout(() => load(), 300);
+  } else {
+    showOnboardingScreen();
+  }
+}
+
+function showUnlockScreen(errorMsg) {
+  const errEl = $('unlockError');
+  if (errorMsg) {
+    errEl.textContent = errorMsg;
+    errEl.style.display = '';
+  } else {
+    errEl.style.display = 'none';
+    errEl.textContent = '';
+  }
+  $('unlockPasswordInput').value = '';
+  $('unlockModal').classList.add('visible');
+  setTimeout(() => $('unlockPasswordInput').focus(), 100);
+  setStatus('', 'Painel bloqueado — aguardando senha…');
+}
+
+function hideUnlockScreen() {
+  $('unlockModal').classList.remove('visible');
+}
+
+function showOnboardingScreen() {
+  $('onboardingModal').classList.add('visible');
+  setTimeout(() => $('onboardingTokenInput').focus(), 100);
+  setStatus('', 'Aguardando token…');
+}
+
+function hideOnboardingScreen() {
+  $('onboardingModal').classList.remove('visible');
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

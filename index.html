@@ -821,6 +821,10 @@ CREATE TABLE IF NOT EXISTS auditoria_cards (
       <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
       Painel Analítico
     </button>
+    <button class="section-tab tab-resumo" id="stab-violacao" onclick="switchSection('violacao')">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.5l5.5 2.5v4c0 3.2-2.3 5.6-5.5 6.5-3.2-.9-5.5-3.3-5.5-6.5v-4L8 1.5z"/></svg>
+      Violação de Marca
+    </button>
   </div>
 
   <!-- CARTEIRA TABS -->
@@ -831,6 +835,11 @@ CREATE TABLE IF NOT EXISTS auditoria_cards (
 
   <!-- RESUMO PANEL -->
   <div id="resumo-panel" style="display:none;flex:1;overflow:auto;padding:24px;flex-direction:column;gap:24px;background:var(--bg)"></div>
+
+  <!-- VIOLAÇÃO DE MARCA PANEL (painel da Branddi embutido via iframe; carrega só ao abrir a aba) -->
+  <div id="violacao-panel" style="display:none;flex:1;overflow:hidden;background:var(--bg)">
+    <iframe id="violacao-iframe" data-src="painel-violacao.html" title="Painel de Violação de Marca" style="flex:1;width:100%;height:100%;border:0;display:block"></iframe>
+  </div>
 </div>
 
 <script>
@@ -1799,8 +1808,21 @@ function switchSection(section) {
 
   // Handle resumo separately
   const resumoPanel = document.getElementById('resumo-panel');
+  const violacaoPanel = document.getElementById('violacao-panel');
   const carteiraNav = document.getElementById('carteira-tabs');
   const mainContent = document.getElementById('content');
+
+  // Aba "Violação de Marca" = painel da Branddi embutido (iframe). Carrega só na 1ª vez que abre.
+  if (section === 'violacao') {
+    mainContent.style.display = 'none';
+    carteiraNav.style.display = 'none';
+    resumoPanel.style.display = 'none';
+    const ifr = document.getElementById('violacao-iframe');
+    if (ifr && !ifr.src) ifr.src = ifr.dataset.src;   // lazy-load
+    if (violacaoPanel) violacaoPanel.style.display = 'flex';
+    return;
+  }
+  if (violacaoPanel) violacaoPanel.style.display = 'none';   // esconde a aba de violação nas demais seções
 
   if (section === 'resumo') {
     mainContent.style.display = 'none';
